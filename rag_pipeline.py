@@ -11,7 +11,8 @@ from vectorstore_chroma import get_vectorstore
 from config import (
     VLLM_BASE_URL, LLM_MODEL, TOP_K, RELEVANCE_THRESHOLD,
     DENSE_WEIGHT, SPARSE_WEIGHT, QUERY_CACHE_SIZE, ENABLE_QUERY_CACHE,
-    MAX_RETRIES, RETRY_DELAY, TEMPERATURE, LOG_LEVEL
+    MAX_RETRIES, RETRY_DELAY, TEMPERATURE, LOG_LEVEL,
+    MAX_CONTEXT_LENGTH, MAX_CHUNK_LENGTH, MAX_TOKENS
 )
 
 # Setup logging
@@ -25,29 +26,10 @@ llm_client = OpenAI(base_url=VLLM_BASE_URL, api_key="not-needed")
 _query_cache: Dict[str, List[Dict]] = {}
 MAX_CACHE_SIZE = QUERY_CACHE_SIZE
 
-SYSTEM_PROMPT_EN = """You are an expert assistant specializing in embedded programming and embedded systems.
+# Rút gọn system prompt để giảm tokens
+SYSTEM_PROMPT_EN = """Answer based ONLY on the provided context. If no relevant info, say "NO_RELEVANT_INFO". Cite sources. Be concise."""
 
-IMPORTANT RULES:
-- ONLY answer based on the provided context from the knowledge base.
-- If the context does not contain relevant information, respond EXACTLY with: "NO_RELEVANT_INFO"
-- DO NOT make up or infer information not in the context.
-- Always cite which document/source you got the information from.
-- Provide code examples only if they exist in the context.
-- For technical terms, registers, or configurations, be precise and accurate.
-
-Respond in the same language as the user's question."""
-
-SYSTEM_PROMPT_VI = """Bạn là trợ lý chuyên gia về lập trình nhúng và hệ thống nhúng.
-
-QUY TẮC QUAN TRỌNG:
-- CHỈ trả lời dựa trên ngữ cảnh được cung cấp từ cơ sở kiến thức.
-- Nếu ngữ cảnh KHÔNG chứa thông tin liên quan, trả lời CHÍNH XÁC: "NO_RELEVANT_INFO"
-- KHÔNG ĐƯỢC bịa hoặc suy luận thông tin không có trong ngữ cảnh.
-- Luôn trích dẫn nguồn tài liệu mà bạn lấy thông tin.
-- Chỉ cung cấp ví dụ code nếu có trong ngữ cảnh.
-- Với các thuật ngữ kỹ thuật, thanh ghi, cấu hình, hãy chính xác.
-
-Trả lời bằng ngôn ngữ của câu hỏi."""
+SYSTEM_PROMPT_VI = """Trả lời CHỈ dựa trên ngữ cảnh. Nếu không có thông tin, nói "NO_RELEVANT_INFO". Trích nguồn. Ngắn gọn."""
 
 
 def detect_language(text: str) -> str:
@@ -100,56 +82,62 @@ def clear_cache():
     logger.info("Query cache cleared")
 
 
+def truncate_text(text: str, max_length: int) -> str:
+    """Truncate text to max_length characters"""
+    if len(text) <= max_length:
+        return text
+    return text[:max_length] + "..."
+
+
 def format_context(docs: List[Dict]) -> tuple:
-    """Format retrieved docs thành context string"""
+    """Format retrieved docs thành context string với giới hạn độ dài"""
     if not docs:
         return "No relevant documents found.", False, []
-    
+
     relevant_docs = [d for d in docs if d.get("score", 0) >= RELEVANCE_THRESHOLD]
-    
+
     if not relevant_docs:
         return "No relevant documents found.", False, []
-    
+
     context_parts = []
+    total_length = 0
+
     for i, doc in enumerate(relevant_docs, 1):
+        # Dừng nếu đã đạt giới hạn context
+        if total_length >= MAX_CONTEXT_LENGTH:
+            break
+
         source = doc.get("metadata", {}).get("source", "Unknown")
-        score = doc.get("score", 0)
         chunk_idx = doc.get("metadata", {}).get("chunk_index", "?")
         text = doc.get("text", "")
-        
-        # Thêm thông tin về loại score nếu có
-        score_info = f"relevance: {score:.2f}"
-        if "dense_score" in doc and "sparse_score" in doc:
-            score_info += f", dense: {doc['dense_score']:.2f}, sparse: {doc['sparse_score']:.2f}"
-        
-        context_parts.append(
-            f"[{i}] Source: {source} (chunk {chunk_idx}, {score_info})\n{text}"
-        )
-    
-    return "\n\n---\n\n".join(context_parts), True, relevant_docs
+
+        # Truncate mỗi chunk
+        text = truncate_text(text, MAX_CHUNK_LENGTH)
+
+        # Format ngắn gọn hơn
+        chunk_text = f"[{i}] {source}:\n{text}"
+        context_parts.append(chunk_text)
+        total_length += len(chunk_text)
+
+    return "\n\n".join(context_parts), True, relevant_docs
 
 
 def build_prompt(query: str, context: str, lang: str) -> List[Dict]:
-    """Build prompt messages"""
+    """Build prompt messages - tối ưu ngắn gọn"""
     system = SYSTEM_PROMPT_VI if lang == "vi" else SYSTEM_PROMPT_EN
-    
+
+    # Prompt ngắn gọn hơn
     if lang == "vi":
-        user_content = f"""Ngữ cảnh từ cơ sở kiến thức:
+        user_content = f"""Ngữ cảnh:
 {context}
 
----
-Câu hỏi: {query}
-
-Hãy trả lời chi tiết dựa trên ngữ cảnh. Nếu không có thông tin liên quan, trả lời "NO_RELEVANT_INFO"."""
+Hỏi: {query}"""
     else:
-        user_content = f"""Context from knowledge base:
+        user_content = f"""Context:
 {context}
 
----
-Question: {query}
+Q: {query}"""
 
-Provide a detailed answer based on the context. If no relevant information, respond with "NO_RELEVANT_INFO"."""
-    
     return [
         {"role": "system", "content": system},
         {"role": "user", "content": user_content}
@@ -186,9 +174,9 @@ def generate_with_retry(
 
 
 def chat(
-    query: str, 
-    top_k: int = TOP_K, 
-    max_tokens: int = 1024,
+    query: str,
+    top_k: int = TOP_K,
+    max_tokens: int = MAX_TOKENS,
     use_hybrid: bool = True
 ) -> Dict:
     """
@@ -280,9 +268,9 @@ def chat(
 
 
 def chat_stream(
-    query: str, 
-    top_k: int = TOP_K, 
-    max_tokens: int = 1024,
+    query: str,
+    top_k: int = TOP_K,
+    max_tokens: int = MAX_TOKENS,
     use_hybrid: bool = True
 ) -> Generator[str, None, None]:
     """Streaming chat"""

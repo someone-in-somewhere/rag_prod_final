@@ -52,8 +52,12 @@ USE_SEMANTIC_CHUNKING = os.getenv("USE_SEMANTIC_CHUNKING", "true").lower() == "t
 # ============================================
 # Retrieval
 # ============================================
-TOP_K = int(os.getenv("TOP_K", 5))
-RELEVANCE_THRESHOLD = float(os.getenv("RELEVANCE_THRESHOLD", 0.4))
+TOP_K = int(os.getenv("TOP_K", 3))  # Giảm từ 5 xuống 3 để tăng tốc
+RELEVANCE_THRESHOLD = float(os.getenv("RELEVANCE_THRESHOLD", 0.5))  # Tăng threshold để lọc tốt hơn
+
+# Giới hạn độ dài context
+MAX_CONTEXT_LENGTH = int(os.getenv("MAX_CONTEXT_LENGTH", 2000))  # Tổng context tối đa
+MAX_CHUNK_LENGTH = int(os.getenv("MAX_CHUNK_LENGTH", 600))  # Mỗi chunk tối đa
 
 # Hybrid search weights (dense + sparse = 1.0)
 DENSE_WEIGHT = float(os.getenv("DENSE_WEIGHT", 0.7))
@@ -75,7 +79,7 @@ MAX_IMAGE_SIZE_MB = int(os.getenv("MAX_IMAGE_SIZE_MB", 20))
 # ============================================
 # Generation
 # ============================================
-MAX_TOKENS = int(os.getenv("MAX_TOKENS", 1024))
+MAX_TOKENS = int(os.getenv("MAX_TOKENS", 256))  # Giảm từ 1024 xuống 256 để tăng tốc
 TEMPERATURE = float(os.getenv("TEMPERATURE", 0.7))
 MAX_RETRIES = int(os.getenv("MAX_RETRIES", 3))
 RETRY_DELAY = float(os.getenv("RETRY_DELAY", 1.0))
