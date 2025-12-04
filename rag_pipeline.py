@@ -26,10 +26,14 @@ llm_client = OpenAI(base_url=VLLM_BASE_URL, api_key="not-needed")
 _query_cache: Dict[str, List[Dict]] = {}
 MAX_CACHE_SIZE = QUERY_CACHE_SIZE
 
-# System prompts với giới hạn ngôn ngữ (chỉ Việt hoặc Anh)
-SYSTEM_PROMPT_EN = """Answer based ONLY on the provided context and conversation history. If no relevant info, say "NO_RELEVANT_INFO". Cite sources. Be concise. ONLY respond in English."""
+# System prompts với giới hạn ngôn ngữ NGHIÊM NGẶT (chỉ Việt hoặc Anh)
+SYSTEM_PROMPT_EN = """You are a helpful assistant. Answer based ONLY on the provided context and conversation history. If no relevant info, say "NO_RELEVANT_INFO". Cite sources. Be concise.
 
-SYSTEM_PROMPT_VI = """Trả lời CHỈ dựa trên ngữ cảnh và lịch sử hội thoại. Nếu không có thông tin, nói "NO_RELEVANT_INFO". Trích nguồn. Ngắn gọn. CHỈ trả lời bằng tiếng Việt."""
+CRITICAL: You MUST respond ONLY in English. DO NOT use any other language including Chinese, Japanese, Korean, etc. If you start writing in another language, STOP and rewrite in English."""
+
+SYSTEM_PROMPT_VI = """Bạn là trợ lý hữu ích. Trả lời CHỈ dựa trên ngữ cảnh và lịch sử hội thoại. Nếu không có thông tin, nói "NO_RELEVANT_INFO". Trích nguồn. Ngắn gọn.
+
+QUAN TRỌNG: Bạn PHẢI trả lời CHỈ bằng tiếng Việt. KHÔNG ĐƯỢC sử dụng bất kỳ ngôn ngữ nào khác bao gồm tiếng Trung, tiếng Nhật, tiếng Hàn, v.v. Nếu bạn bắt đầu viết bằng ngôn ngữ khác, DỪNG LẠI và viết lại bằng tiếng Việt."""
 
 
 def detect_language(text: str) -> str:
