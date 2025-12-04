@@ -1,0 +1,420 @@
+<!-- frontend/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Embedded RAG Chatbot</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #ffffff; 
+            color: #1a1a1a; 
+            min-height: 100vh; 
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        /* Header */
+        .header { 
+            text-align: center; 
+            padding: 20px 0; 
+            border-bottom: 1px solid #e0e0e0; 
+            margin-bottom: 20px; 
+        }
+        .header h1 { color: #2563eb; font-size: 1.8em; }
+        .header p { color: #666666; margin-top: 8px; }
+        
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab { 
+            padding: 10px 20px; 
+            background: #f5f5f5; 
+            border: 1px solid #e0e0e0; 
+            color: #666666; 
+            cursor: pointer; 
+            border-radius: 8px; 
+            transition: all 0.2s; 
+        }
+        .tab.active { 
+            background: #2563eb; 
+            color: #ffffff; 
+            border-color: #2563eb; 
+        }
+        .tab:hover { background: #e8e8e8; }
+        .tab.active:hover { background: #1d4ed8; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        
+        /* Chat Panel */
+        .chat-container { display: flex; flex-direction: column; height: calc(100vh - 200px); }
+        .messages { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 20px; 
+            background: #f9f9f9; 
+            border: 1px solid #e0e0e0; 
+            border-radius: 12px; 
+            margin-bottom: 20px; 
+        }
+        .message { 
+            margin-bottom: 16px; 
+            padding: 12px 16px; 
+            border-radius: 12px; 
+            max-width: 80%; 
+        }
+        .message.user { 
+            background: #2563eb; 
+            color: #ffffff; 
+            margin-left: auto; 
+        }
+        .message.assistant { 
+            background: #ffffff; 
+            border: 1px solid #e0e0e0; 
+            color: #1a1a1a; 
+        }
+        .message pre { 
+            background: #f5f5f5; 
+            padding: 10px; 
+            border-radius: 6px; 
+            overflow-x: auto; 
+            margin-top: 8px; 
+            font-size: 0.9em; 
+            border: 1px solid #e0e0e0;
+        }
+        .message code { font-family: 'Fira Code', monospace; }
+        .sources { 
+            font-size: 0.8em; 
+            color: #666666; 
+            margin-top: 8px; 
+            padding-top: 8px; 
+            border-top: 1px solid #e0e0e0; 
+        }
+        
+        /* Input Area */
+        .input-area { display: flex; gap: 10px; }
+        .input-area input { 
+            flex: 1; 
+            padding: 14px 18px; 
+            background: #ffffff; 
+            border: 1px solid #d0d0d0; 
+            border-radius: 12px; 
+            color: #1a1a1a; 
+            font-size: 1em; 
+        }
+        .input-area input:focus { 
+            outline: none; 
+            border-color: #2563eb; 
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .input-area input::placeholder { color: #999999; }
+        .input-area button { 
+            padding: 14px 28px; 
+            background: #2563eb; 
+            border: none; 
+            border-radius: 12px; 
+            color: #ffffff; 
+            font-weight: 600; 
+            cursor: pointer; 
+        }
+        .input-area button:hover { background: #1d4ed8; }
+        .input-area button:disabled { background: #cccccc; cursor: not-allowed; }
+        
+        /* Documents Panel */
+        .upload-area { 
+            background: #f9f9f9; 
+            border: 2px dashed #d0d0d0; 
+            border-radius: 12px; 
+            padding: 40px; 
+            text-align: center; 
+            margin-bottom: 20px; 
+        }
+        .upload-area.dragover { 
+            border-color: #2563eb; 
+            background: #eff6ff; 
+        }
+        .upload-area input[type="file"] { display: none; }
+        .upload-area p { color: #666666; }
+        .upload-btn { 
+            display: inline-block; 
+            padding: 12px 24px; 
+            background: #2563eb; 
+            color: #ffffff; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+        }
+        .upload-btn:hover { background: #1d4ed8; }
+        
+        /* Document List */
+        .doc-list { 
+            background: #ffffff; 
+            border: 1px solid #e0e0e0; 
+            border-radius: 12px; 
+            overflow: hidden; 
+        }
+        .doc-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 16px 20px; 
+            border-bottom: 1px solid #e0e0e0; 
+        }
+        .doc-item:last-child { border-bottom: none; }
+        .doc-info { display: flex; align-items: center; gap: 12px; }
+        .doc-icon { 
+            width: 40px; 
+            height: 40px; 
+            background: #f5f5f5; 
+            border-radius: 8px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 1.2em;
+        }
+        .doc-name { font-weight: 500; color: #1a1a1a; }
+        .doc-meta { font-size: 0.85em; color: #666666; }
+        .doc-actions { display: flex; gap: 8px; }
+        .doc-actions button { 
+            padding: 8px 16px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 0.9em; 
+        }
+        .btn-delete { background: #ef4444; color: white; }
+        .btn-delete:hover { background: #dc2626; }
+        
+        /* Status Badge */
+        .status { 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-size: 0.8em; 
+        }
+        .status.uploaded { background: #fef3c7; color: #92400e; }
+        .status.ingested { background: #d1fae5; color: #065f46; }
+        
+        /* Loading Spinner */
+        .loading { 
+            display: inline-block; 
+            width: 20px; 
+            height: 20px; 
+            border: 2px solid #ffffff; 
+            border-top-color: transparent; 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite; 
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Section Title */
+        .section-title {
+            margin-bottom: 16px;
+            color: #666666;
+            font-size: 1em;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Embedded Programming RAG Chatbot</h1>
+            <p>Ask questions about microcontrollers, protocols, registers & more</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('chat')">💬 Chat</button>
+            <button class="tab" onclick="switchTab('docs')">📄 Documents</button>
+        </div>
+        
+        <!-- Chat Panel -->
+        <div id="chat-panel" class="panel active">
+            <div class="chat-container">
+                <div class="messages" id="messages">
+                    <div class="message assistant">
+                        <strong>Assistant:</strong> Xin chào! Tôi là trợ lý chuyên về lập trình nhúng. Hãy hỏi tôi về vi điều khiển, giao thức I2C/SPI/UART, thanh ghi, hoặc bất kỳ vấn đề embedded nào!
+                    </div>
+                </div>
+                <div class="input-area">
+                    <input type="text" id="query-input" placeholder="Hỏi về lập trình nhúng... (VD: Giải thích giao thức I2C)" onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button onclick="sendMessage()" id="send-btn">Gửi</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Documents Panel -->
+        <div id="docs-panel" class="panel">
+            <div class="upload-area" id="upload-area" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                <p style="margin-bottom: 16px;">Kéo thả file hoặc click để upload</p>
+                <p style="margin-bottom: 16px; font-size: 0.9em; color: #888;">Hỗ trợ: PDF, DOCX, TXT, JPG, PNG (tối đa 50MB, 100 trang)</p>
+                <label class="upload-btn">
+                    Chọn File
+                    <input type="file" id="file-input" accept=".pdf,.docx,.txt,.jpg,.jpeg,.png" onchange="uploadFile(this.files[0])">
+                </label>
+            </div>
+            <h3 class="section-title">📚 Tài liệu đã upload</h3>
+            <div class="doc-list" id="doc-list">
+                <div class="doc-item" style="color: #888; justify-content: center;">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let documents = [];
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelector(`.tab[onclick*="${tab}"]`).classList.add('active');
+            document.getElementById(`${tab}-panel`).classList.add('active');
+            if (tab === 'docs') loadDocuments();
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('query-input');
+            const query = input.value.trim();
+            if (!query) return;
+
+            const messages = document.getElementById('messages');
+            messages.innerHTML += `<div class="message user"><strong>You:</strong> ${escapeHtml(query)}</div>`;
+            input.value = '';
+            
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="loading"></span>';
+
+            try {
+                const res = await fetch(`${API_BASE}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, top_k: 5, max_tokens: 1024 })
+                });
+                const data = await res.json();
+                
+                let sourcesHtml = '';
+                if (data.sources && data.sources.length > 0) {
+                    sourcesHtml = `<div class="sources">📎 Sources: ${data.sources.map(s => `${s.source} (${(s.score*100).toFixed(0)}%)`).join(', ')}</div>`;
+                }
+                
+                messages.innerHTML += `<div class="message assistant"><strong>Assistant:</strong> ${formatResponse(data.response)}${sourcesHtml}</div>`;
+            } catch (err) {
+                messages.innerHTML += `<div class="message assistant" style="background:#fef2f2; border-color:#fecaca; color:#991b1b;"><strong>Error:</strong> ${err.message}</div>`;
+            }
+
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = 'Gửi';
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function formatResponse(text) {
+            return text.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+                       .replace(/`([^`]+)`/g, '<code>$1</code>')
+                       .replace(/\n/g, '<br>');
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        async function loadDocuments() {
+            try {
+                const res = await fetch(`${API_BASE}/documents`);
+                const data = await res.json();
+                documents = data.documents || [];
+                renderDocuments();
+            } catch (err) {
+                document.getElementById('doc-list').innerHTML = `<div class="doc-item" style="color:#ef4444;">Error loading documents</div>`;
+            }
+        }
+
+        function renderDocuments() {
+            const list = document.getElementById('doc-list');
+            if (documents.length === 0) {
+                list.innerHTML = '<div class="doc-item" style="color:#888;justify-content:center;">Chưa có tài liệu nào</div>';
+                return;
+            }
+            list.innerHTML = documents.map(doc => `
+                <div class="doc-item">
+                    <div class="doc-info">
+                        <div class="doc-icon">${getIcon(doc.doc_type)}</div>
+                        <div>
+                            <div class="doc-name">${doc.filename}</div>
+                            <div class="doc-meta">${doc.chunk_count || 0} chunks • ${doc.doc_type?.toUpperCase()}</div>
+                        </div>
+                    </div>
+                    <div class="doc-actions">
+                        <span class="status ingested">✓ Indexed</span>
+                        <button class="btn-delete" onclick="deleteDoc('${doc.id}')">Xóa</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getIcon(type) {
+            const icons = { pdf: '📕', docx: '📘', txt: '📄', image: '🖼️' };
+            return icons[type] || '📄';
+        }
+
+        async function uploadFile(file) {
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const uploadRes = await fetch(`${API_BASE}/upload`, { method: 'POST', body: formData });
+                const uploadData = await uploadRes.json();
+                
+                if (!uploadRes.ok) {
+                    alert(uploadData.detail);
+                    return;
+                }
+                
+                const ingestRes = await fetch(`${API_BASE}/ingest`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: uploadData.filename })
+                });
+                const ingestData = await ingestRes.json();
+                
+                if (!ingestRes.ok) {
+                    alert(ingestData.detail);
+                    return;
+                }
+                
+                alert('Upload thành công! ' + ingestData.chunk_count + ' chunks đã được tạo.');
+                loadDocuments();
+            } catch (err) {
+                alert('Lỗi kết nối: ' + err.message);
+            }
+        }
+
+        async function deleteDoc(docId) {
+            if (!confirm('Xác nhận xóa tài liệu này?')) return;
+            try {
+                await fetch(`${API_BASE}/documents/${docId}`, { method: 'DELETE' });
+                loadDocuments();
+            } catch (err) {
+                alert('Lỗi xóa: ' + err.message);
+            }
+        }
+
+        function handleDragOver(e) { 
+            e.preventDefault(); 
+            e.target.closest('.upload-area').classList.add('dragover'); 
+        }
+        function handleDragLeave(e) { 
+            e.target.closest('.upload-area').classList.remove('dragover'); 
+        }
+        function handleDrop(e) {
+            e.preventDefault();
+            e.target.closest('.upload-area').classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) uploadFile(file);
+        }
+
+        // Init
+        loadDocuments();
+    </script>
+</body>
+</html>

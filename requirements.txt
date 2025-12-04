@@ -1,0 +1,61 @@
+# ============================================
+# Requirements for Embedded RAG Chatbot
+# Tested with Python 3.10-3.11, CUDA 12.x
+# ============================================
+
+# === FastAPI Backend ===
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9
+pydantic>=2.9.0
+
+# === Document Processing ===
+pymupdf>=1.25.0
+python-docx>=1.1.0
+
+# === OCR ===
+# PaddleOCR - hỗ trợ tiếng Việt tốt
+paddleocr>=3.0.0
+
+# === Vision Model (Qwen2-VL) ===
+transformers>=4.49.0
+accelerate>=0.34.0
+qwen-vl-utils>=0.0.8
+
+# === Embedding - BGE-M3 với Hybrid Search ===
+FlagEmbedding>=1.2.0
+
+# === Vector Store ===
+chromadb>=0.5.0,<1.0.0
+
+# === Redis ===
+redis>=5.0.0
+
+# === LLM Client (OpenAI-compatible cho vLLM) ===
+openai>=1.50.0
+
+# === Core Dependencies ===
+torch>=2.4.0
+numpy>=1.26.0,<2.0
+pillow>=10.0.0
+
+# ============================================
+# QUAN TRỌNG: Cài đặt theo thứ tự
+# ============================================
+#
+# 1. Cài PyTorch với CUDA:
+#    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+#
+# 2. Cài PaddlePaddle GPU:
+#    # CUDA 12.6:
+#    pip install paddlepaddle-gpu -i https://www.paddlepaddle.org.cn/packages/stable/cu126/
+#    # CUDA 12.1:
+#    pip install paddlepaddle-gpu -i https://www.paddlepaddle.org.cn/packages/stable/cu121/
+#
+# 3. Cài vLLM:
+#    pip install vllm
+#
+# 4. Cài requirements còn lại:
+#    pip install -r requirements.txt
+#
+# ============================================
