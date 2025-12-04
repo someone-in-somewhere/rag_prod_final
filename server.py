@@ -42,12 +42,18 @@ app.add_middleware(
 
 # === Pydantic Models ===
 
+class ConversationMessage(BaseModel):
+    role: str
+    content: str
+
+
 class ChatRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=2000)
-    top_k: int = Field(default=5, ge=1, le=20)
-    max_tokens: int = Field(default=1024, ge=100, le=4096)
+    top_k: int = Field(default=3, ge=1, le=20)
+    max_tokens: int = Field(default=256, ge=50, le=2048)
     stream: bool = False
-    use_hybrid: bool = True  # Mới: toggle hybrid search
+    use_hybrid: bool = True
+    conversation_history: Optional[List[ConversationMessage]] = None  # Conversation memory
 
 
 class ChatResponse(BaseModel):
@@ -196,32 +202,38 @@ async def ingest(request: IngestRequest):
 
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
-    """Chat endpoint"""
+    """Chat endpoint với conversation memory"""
     logger.info(f"Query: {request.query[:100]}... (hybrid={request.use_hybrid})")
-    
+
+    # Chuyển conversation_history sang dict
+    history = None
+    if request.conversation_history:
+        history = [{"role": msg.role, "content": msg.content} for msg in request.conversation_history]
+
     if request.stream:
         return StreamingResponse(
             chat_stream(
-                request.query, 
-                request.top_k, 
+                request.query,
+                request.top_k,
                 request.max_tokens,
                 use_hybrid=request.use_hybrid
             ),
             media_type="text/plain"
         )
-    
+
     result = chat(
-        request.query, 
-        request.top_k, 
+        request.query,
+        request.top_k,
         request.max_tokens,
-        use_hybrid=request.use_hybrid
+        use_hybrid=request.use_hybrid,
+        conversation_history=history
     )
-    
+
     logger.info(
         f"Response generated: {result['retrieval_info'].get('total_time_ms', 0)}ms, "
         f"sources={len(result['sources'])}"
     )
-    
+
     return ChatResponse(**result)
 
 

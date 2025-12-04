@@ -12,7 +12,7 @@ from config import (
     VLLM_BASE_URL, LLM_MODEL, TOP_K, RELEVANCE_THRESHOLD,
     DENSE_WEIGHT, SPARSE_WEIGHT, QUERY_CACHE_SIZE, ENABLE_QUERY_CACHE,
     MAX_RETRIES, RETRY_DELAY, TEMPERATURE, LOG_LEVEL,
-    MAX_CONTEXT_LENGTH, MAX_CHUNK_LENGTH, MAX_TOKENS
+    MAX_CONTEXT_LENGTH, MAX_CHUNK_LENGTH, MAX_TOKENS, MAX_CONVERSATION_HISTORY
 )
 
 # Setup logging
@@ -26,10 +26,10 @@ llm_client = OpenAI(base_url=VLLM_BASE_URL, api_key="not-needed")
 _query_cache: Dict[str, List[Dict]] = {}
 MAX_CACHE_SIZE = QUERY_CACHE_SIZE
 
-# Rút gọn system prompt để giảm tokens
-SYSTEM_PROMPT_EN = """Answer based ONLY on the provided context. If no relevant info, say "NO_RELEVANT_INFO". Cite sources. Be concise."""
+# System prompts với giới hạn ngôn ngữ (chỉ Việt hoặc Anh)
+SYSTEM_PROMPT_EN = """Answer based ONLY on the provided context and conversation history. If no relevant info, say "NO_RELEVANT_INFO". Cite sources. Be concise. ONLY respond in English."""
 
-SYSTEM_PROMPT_VI = """Trả lời CHỈ dựa trên ngữ cảnh. Nếu không có thông tin, nói "NO_RELEVANT_INFO". Trích nguồn. Ngắn gọn."""
+SYSTEM_PROMPT_VI = """Trả lời CHỈ dựa trên ngữ cảnh và lịch sử hội thoại. Nếu không có thông tin, nói "NO_RELEVANT_INFO". Trích nguồn. Ngắn gọn. CHỈ trả lời bằng tiếng Việt."""
 
 
 def detect_language(text: str) -> str:
@@ -122,26 +122,38 @@ def format_context(docs: List[Dict]) -> tuple:
     return "\n\n".join(context_parts), True, relevant_docs
 
 
-def build_prompt(query: str, context: str, lang: str) -> List[Dict]:
-    """Build prompt messages - tối ưu ngắn gọn"""
+def build_prompt(query: str, context: str, lang: str, conversation_history: List[Dict] = None) -> List[Dict]:
+    """Build prompt messages với conversation history"""
     system = SYSTEM_PROMPT_VI if lang == "vi" else SYSTEM_PROMPT_EN
 
-    # Prompt ngắn gọn hơn
+    messages = [{"role": "system", "content": system}]
+
+    # Thêm conversation history nếu có
+    if conversation_history:
+        # Giới hạn số tin nhắn history
+        history = conversation_history[-MAX_CONVERSATION_HISTORY:]
+        for msg in history:
+            if msg.get("role") in ["user", "assistant"] and msg.get("content"):
+                messages.append({
+                    "role": msg["role"],
+                    "content": msg["content"][:500]  # Giới hạn mỗi tin nhắn 500 chars
+                })
+
+    # Thêm context và query hiện tại
     if lang == "vi":
-        user_content = f"""Ngữ cảnh:
+        user_content = f"""Ngữ cảnh từ tài liệu:
 {context}
 
-Hỏi: {query}"""
+Câu hỏi: {query}"""
     else:
-        user_content = f"""Context:
+        user_content = f"""Context from documents:
 {context}
 
-Q: {query}"""
+Question: {query}"""
 
-    return [
-        {"role": "system", "content": system},
-        {"role": "user", "content": user_content}
-    ]
+    messages.append({"role": "user", "content": user_content})
+
+    return messages
 
 
 def generate_with_retry(
@@ -177,23 +189,24 @@ def chat(
     query: str,
     top_k: int = TOP_K,
     max_tokens: int = MAX_TOKENS,
-    use_hybrid: bool = True
+    use_hybrid: bool = True,
+    conversation_history: List[Dict] = None
 ) -> Dict:
     """
-    Main chat function.
+    Main chat function với conversation memory.
     Returns: {query, response, language, sources, context_used, retrieval_info}
     """
     start_time = time.time()
     lang = detect_language(query)
-    
+
     # Retrieve
     retrieve_start = time.time()
     retrieved_docs = retrieve_with_cache(query, top_k=top_k, use_hybrid=use_hybrid)
     retrieve_time = time.time() - retrieve_start
-    
+
     # Format context
     context, has_relevant, relevant_docs = format_context(retrieved_docs)
-    
+
     # No relevant info message
     no_info_msg = (
         "Tôi không có thông tin về chủ đề này trong tài liệu hiện tại. "
@@ -202,7 +215,7 @@ def chat(
         "I don't have information about this topic in the current documents. "
         "Please upload relevant documents or ask another question."
     )
-    
+
     if not has_relevant:
         return {
             "query": query,
@@ -217,13 +230,13 @@ def chat(
                 "hybrid_search": use_hybrid
             }
         }
-    
-    # Generate
+
+    # Generate với conversation history
     generate_start = time.time()
-    messages = build_prompt(query, context, lang)
+    messages = build_prompt(query, context, lang, conversation_history)
     response = generate_with_retry(messages, max_tokens=max_tokens)
     generate_time = time.time() - generate_start
-    
+
     # Check if model says no info
     if "NO_RELEVANT_INFO" in response:
         return {
@@ -240,16 +253,16 @@ def chat(
                 "hybrid_search": use_hybrid
             }
         }
-    
+
     # Build sources
     sources = [{
         "source": d.get("metadata", {}).get("source"),
         "score": round(d.get("score", 0), 3),
         "chunk_index": d.get("metadata", {}).get("chunk_index")
     } for d in relevant_docs]
-    
+
     total_time = time.time() - start_time
-    
+
     return {
         "query": query,
         "response": response,

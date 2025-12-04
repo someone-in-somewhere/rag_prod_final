@@ -70,11 +70,14 @@ QUERY_CACHE_SIZE = int(os.getenv("QUERY_CACHE_SIZE", 1000))
 ENABLE_QUERY_CACHE = os.getenv("ENABLE_QUERY_CACHE", "true").lower() == "true"
 
 # ============================================
-# File Limits
+# File Limits (RTX 4090 49GB VRAM, optimized)
 # ============================================
-MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", 50))
-MAX_PDF_PAGES = int(os.getenv("MAX_PDF_PAGES", 100))      # Giới hạn cho cả PDF và DOCX
-MAX_IMAGE_SIZE_MB = int(os.getenv("MAX_IMAGE_SIZE_MB", 20))
+MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", 100))      # Tăng lên 100MB
+MAX_PDF_PAGES = int(os.getenv("MAX_PDF_PAGES", 200))            # Tăng lên 200 trang
+MAX_IMAGE_SIZE_MB = int(os.getenv("MAX_IMAGE_SIZE_MB", 30))     # Tăng lên 30MB
+
+# Conversation memory
+MAX_CONVERSATION_HISTORY = int(os.getenv("MAX_CONVERSATION_HISTORY", 6))  # Số tin nhắn nhớ
 
 # ============================================
 # Generation
