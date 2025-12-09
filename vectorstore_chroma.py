@@ -125,11 +125,17 @@ class VectorStore:
         # Embed query
         query_result = self.embedder.embed_query(query, return_sparse=use_hybrid)
         query_dense = query_result["dense"].tolist()
-        
+
+        # Kiểm tra collection có documents không
+        doc_count = self.collection.count()
+        if doc_count == 0:
+            return []
+
         # Dense search qua ChromaDB
+        n_results = min(top_k * 2, doc_count) if use_hybrid else min(top_k, doc_count)
         dense_results = self.collection.query(
             query_embeddings=[query_dense],
-            n_results=min(top_k * 2, self.collection.count()) if use_hybrid else top_k,
+            n_results=max(n_results, 1),  # Đảm bảo >= 1
             include=["documents", "metadatas", "distances"]
         )
         
