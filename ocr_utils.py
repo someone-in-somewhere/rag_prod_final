@@ -11,37 +11,63 @@ from config import VISION_MODEL
 class OCREngine:
     """PaddleOCR engine - hỗ trợ tiếng Việt và tiếng Anh"""
     _instance = None
-    
+    _initialized = False
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._init_ocr()
         return cls._instance
-    
-    def _init_ocr(self):
-        print("Initializing PaddleOCR (GPU mode)...")
-        self.reader = PaddleOCR(
-            use_angle_cls=True,  # Detect rotated text
-            lang='vi',  # Vietnamese (includes English)
-            use_gpu=True,
-            show_log=False
-        )
-        print("PaddleOCR ready")
+
+    def _ensure_initialized(self):
+        """Lazy initialization - chỉ init khi cần"""
+        if self._initialized and hasattr(self, 'reader'):
+            return True
+
+        # Try GPU first, fallback to CPU if OOM
+        for use_gpu in [True, False]:
+            try:
+                mode = "GPU" if use_gpu else "CPU"
+                print(f"Initializing PaddleOCR ({mode} mode)...")
+
+                # Clear CUDA cache before attempting GPU init
+                if use_gpu:
+                    torch.cuda.empty_cache()
+
+                self.reader = PaddleOCR(
+                    use_angle_cls=True,
+                    lang='vi',
+                    use_gpu=use_gpu,
+                    show_log=False
+                )
+                self._initialized = True
+                print(f"PaddleOCR ready ({mode} mode)")
+                return True
+            except Exception as e:
+                if use_gpu:
+                    print(f"PaddleOCR GPU init failed: {e}, trying CPU mode...")
+                else:
+                    print(f"PaddleOCR CPU init also failed: {e}")
+
+        return False
     
     def extract_text(self, image_path: str) -> str:
         """Extract text từ ảnh"""
         try:
+            if not self._ensure_initialized():
+                print("OCR error: Failed to initialize PaddleOCR")
+                return ""
+
             result = self.reader.ocr(image_path, cls=True)
             if not result or not result[0]:
                 return ""
-            
+
             lines = []
             for line in result[0]:
                 text = line[1][0]  # text content
                 conf = line[1][1]  # confidence
                 if conf > 0.5:
                     lines.append(text)
-            
+
             return "\n".join(lines)
         except Exception as e:
             print(f"OCR error: {e}")
@@ -54,35 +80,73 @@ class VisionCaptioner:
     _model = None
     _processor = None
     _loaded = False
-    
+    _load_failed = False
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
-    
-    def load_model(self):
-        """Load model nếu chưa load"""
+
+    def load_model(self) -> bool:
+        """Load model nếu chưa load. Returns True if successful."""
         if self._loaded:
-            return
-        
-        print(f"Loading Vision model: {VISION_MODEL}")
-        self._model = Qwen2VLForConditionalGeneration.from_pretrained(
-            VISION_MODEL,
-            torch_dtype=torch.float16,
-            device_map="auto",
-            trust_remote_code=True
-        )
-        self._processor = AutoProcessor.from_pretrained(
-            VISION_MODEL,
-            trust_remote_code=True
-        )
-        self._loaded = True
-        print("Vision model loaded and kept in memory")
+            return True
+
+        if self._load_failed:
+            # Don't retry if already failed (avoid repeated OOM)
+            return False
+
+        try:
+            # Clear CUDA cache trước khi load
+            torch.cuda.empty_cache()
+
+            # Check available GPU memory
+            if torch.cuda.is_available():
+                free_memory = torch.cuda.get_device_properties(0).total_memory - torch.cuda.memory_allocated(0)
+                free_gb = free_memory / (1024**3)
+                print(f"Available GPU memory: {free_gb:.2f} GiB")
+
+                # Qwen2-VL cần khoảng 4-8GB VRAM
+                if free_gb < 2.0:
+                    print(f"Warning: Low GPU memory ({free_gb:.2f} GiB). Vision captioning may fail.")
+
+            print(f"Loading Vision model: {VISION_MODEL}")
+            self._model = Qwen2VLForConditionalGeneration.from_pretrained(
+                VISION_MODEL,
+                torch_dtype=torch.float16,
+                device_map="auto",
+                trust_remote_code=True
+            )
+            self._processor = AutoProcessor.from_pretrained(
+                VISION_MODEL,
+                trust_remote_code=True
+            )
+            self._loaded = True
+            print("Vision model loaded and kept in memory")
+            return True
+        except Exception as e:
+            print(f"Failed to load Vision model: {e}")
+            self._load_failed = True
+            # Cleanup partial load
+            if self._model is not None:
+                del self._model
+                self._model = None
+            if self._processor is not None:
+                del self._processor
+                self._processor = None
+            torch.cuda.empty_cache()
+            return False
+
+    def reset_load_state(self):
+        """Reset failed state to allow retry"""
+        self._load_failed = False
     
     def caption_image(self, image_path: str, lang: str = "en") -> str:
         """Generate caption cho ảnh kỹ thuật"""
         try:
-            self.load_model()
+            if not self.load_model():
+                print("Vision captioning skipped: model not available (GPU memory insufficient)")
+                return ""
             
             if lang == "vi":
                 prompt = "Mô tả chi tiết hình ảnh kỹ thuật này, tập trung vào sơ đồ mạch, code, linh kiện, cấu hình chân, hoặc thông tin hệ thống nhúng."
