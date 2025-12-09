@@ -33,7 +33,10 @@ CHROMA_COLLECTION = "embedded_docs"
 # Models
 # ============================================
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3")
-VISION_MODEL = os.getenv("VISION_MODEL", "Qwen/Qwen2-VL-7B-Instruct")
+# Vision model: Dùng 2B để tiết kiệm VRAM (mặc định), hoặc set "none" để disable
+# Options: "Qwen/Qwen2-VL-2B-Instruct" (nhẹ), "Qwen/Qwen2-VL-7B-Instruct" (tốt hơn), "none" (disable)
+VISION_MODEL = os.getenv("VISION_MODEL", "Qwen/Qwen2-VL-2B-Instruct")
+ENABLE_VISION = os.getenv("ENABLE_VISION", "true").lower() == "true"
 LLM_MODEL = os.getenv("LLM_MODEL", "Qwen/Qwen2.5-7B-Instruct")
 
 # ============================================

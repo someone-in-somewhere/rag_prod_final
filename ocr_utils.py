@@ -5,7 +5,7 @@ from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 from PIL import Image
 import torch
 from typing import Dict, List
-from config import VISION_MODEL
+from config import VISION_MODEL, ENABLE_VISION
 
 
 class OCREngine:
@@ -144,6 +144,11 @@ class VisionCaptioner:
     def caption_image(self, image_path: str, lang: str = "en") -> str:
         """Generate caption cho ảnh kỹ thuật"""
         try:
+            # Check if vision is disabled via config
+            if not ENABLE_VISION:
+                print("Vision captioning disabled via ENABLE_VISION=false")
+                return ""
+
             if not self.load_model():
                 print("Vision captioning skipped: model not available (GPU memory insufficient)")
                 return ""
