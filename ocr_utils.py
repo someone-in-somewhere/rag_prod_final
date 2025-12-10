@@ -11,37 +11,51 @@ from config import VISION_MODEL
 class OCREngine:
     """PaddleOCR engine - hỗ trợ tiếng Việt và tiếng Anh"""
     _instance = None
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            cls._instance.reader = None
+            cls._instance._initialized = False
             cls._instance._init_ocr()
         return cls._instance
-    
+
     def _init_ocr(self):
-        print("Initializing PaddleOCR (GPU mode)...")
-        self.reader = PaddleOCR(
-            use_angle_cls=True,  # Detect rotated text
-            lang='vi',  # Vietnamese (includes English)
-            use_gpu=True,
-            show_log=False
-        )
-        print("PaddleOCR ready")
-    
+        """Initialize PaddleOCR - auto-detects GPU/CPU based on PaddlePaddle installation"""
+        try:
+            print("Initializing PaddleOCR...")
+            # Note: use_gpu parameter was removed in PaddleOCR v2.6+
+            # GPU/CPU is now auto-detected based on PaddlePaddle installation
+            self.reader = PaddleOCR(
+                use_angle_cls=True,  # Detect rotated text
+                lang='vi',  # Vietnamese (includes English)
+                show_log=False
+            )
+            self._initialized = True
+            print("PaddleOCR ready")
+        except Exception as e:
+            print(f"Warning: Failed to initialize PaddleOCR: {e}")
+            self.reader = None
+            self._initialized = False
+
     def extract_text(self, image_path: str) -> str:
         """Extract text từ ảnh"""
+        if not self._initialized or self.reader is None:
+            print("OCR error: PaddleOCR not initialized")
+            return ""
+
         try:
             result = self.reader.ocr(image_path, cls=True)
             if not result or not result[0]:
                 return ""
-            
+
             lines = []
             for line in result[0]:
                 text = line[1][0]  # text content
                 conf = line[1][1]  # confidence
                 if conf > 0.5:
                     lines.append(text)
-            
+
             return "\n".join(lines)
         except Exception as e:
             print(f"OCR error: {e}")
