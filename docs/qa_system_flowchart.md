@@ -165,7 +165,41 @@ flowchart TD
     P --> Q
 ```
 
-### 3.2 Flowchart Chi Tiết - Quá Trình Retrieval
+### 3.2 Quá Trình Retrieval (Tìm Kiếm Thông Tin)
+
+Quá trình Retrieval là giai đoạn cốt lõi của hệ thống RAG, nơi hệ thống tìm kiếm và truy xuất các đoạn tài liệu liên quan nhất để cung cấp ngữ cảnh cho việc sinh câu trả lời. Hệ thống sử dụng phương pháp tìm kiếm lai (Hybrid Search) kết hợp hai kỹ thuật bổ sung cho nhau để đạt được kết quả tối ưu.
+
+**Tạo vector biểu diễn cho câu hỏi**
+
+Bước đầu tiên trong quá trình tìm kiếm là chuyển đổi câu hỏi của người dùng thành dạng vector số học mà máy tính có thể xử lý. Hệ thống sử dụng mô hình BGE-M3, một mô hình embedding đa ngôn ngữ hiện đại, để thực hiện việc này. Điểm đặc biệt của BGE-M3 là khả năng tạo ra đồng thời hai loại vector từ cùng một câu hỏi.
+
+Loại thứ nhất là vector đặc (dense vector) với 1024 chiều, biểu diễn ý nghĩa ngữ nghĩa tổng thể của câu hỏi. Vector này nắm bắt được các khái niệm trừu tượng và mối quan hệ ngữ nghĩa giữa các từ, cho phép tìm kiếm các tài liệu có ý nghĩa tương tự ngay cả khi không chứa chính xác các từ khóa trong câu hỏi.
+
+Loại thứ hai là vector thưa (sparse vector) chứa trọng số của các từ khóa quan trọng trong câu hỏi. Vector này hoạt động tương tự như các hệ thống tìm kiếm từ khóa truyền thống, giúp tìm chính xác các tài liệu chứa các thuật ngữ cụ thể mà người dùng đề cập.
+
+**Tìm kiếm ngữ nghĩa**
+
+Sử dụng vector đặc, hệ thống thực hiện tìm kiếm trong cơ sở dữ liệu vector ChromaDB. Quá trình này bao gồm việc truy vấn chỉ mục HNSW (Hierarchical Navigable Small World), một cấu trúc dữ liệu được tối ưu hóa cho việc tìm kiếm láng giềng gần nhất trong không gian nhiều chiều. Hệ thống tính toán độ tương đồng cosine giữa vector câu hỏi và các vector tài liệu đã được lưu trữ, sau đó lấy ra một số lượng kết quả gấp đôi số lượng yêu cầu để dự phòng cho bước kết hợp điểm số sau này.
+
+**Tìm kiếm từ khóa**
+
+Song song với tìm kiếm ngữ nghĩa, hệ thống sử dụng vector thưa để thực hiện tìm kiếm từ khóa thông qua chỉ mục đảo ngược (inverted index). Chỉ mục này lưu trữ ánh xạ từ mỗi từ khóa đến danh sách các tài liệu chứa từ đó cùng với trọng số tương ứng. Khi tìm kiếm, hệ thống tra cứu các từ khóa trong câu hỏi, khớp với các tài liệu trong chỉ mục và tính điểm dựa trên trọng số của các từ khớp. Phương pháp này đặc biệt hiệu quả khi người dùng hỏi về các thuật ngữ kỹ thuật cụ thể, tên hàm hoặc mã lệnh.
+
+**Kết hợp và chuẩn hóa điểm số**
+
+Sau khi có kết quả từ cả hai phương pháp tìm kiếm, hệ thống tiến hành chuẩn hóa điểm số để đưa chúng về cùng một thang đo. Điểm số từ tìm kiếm ngữ nghĩa và tìm kiếm từ khóa được chuẩn hóa riêng biệt bằng cách chia cho giá trị lớn nhất trong mỗi nhóm.
+
+Tiếp theo, hệ thống kết hợp hai điểm số theo công thức có trọng số: điểm kết hợp bằng 70% điểm ngữ nghĩa cộng với 30% điểm từ khóa. Tỷ lệ này được chọn dựa trên thực nghiệm, phản ánh việc ưu tiên khả năng hiểu ngữ nghĩa trong khi vẫn đảm bảo tìm được các kết quả khớp chính xác về từ khóa.
+
+Các tài liệu được sắp xếp theo điểm kết hợp từ cao xuống thấp, và hệ thống chọn ra K tài liệu có điểm cao nhất theo yêu cầu của người dùng.
+
+**Lọc theo ngưỡng chất lượng**
+
+Bước cuối cùng trong quá trình Retrieval là lọc các kết quả theo ngưỡng điểm số tối thiểu. Hệ thống chỉ giữ lại những tài liệu có điểm kết hợp từ 0.4 trở lên. Ngưỡng này đảm bảo rằng chỉ những tài liệu thực sự liên quan mới được đưa vào ngữ cảnh, tránh việc đưa vào những thông tin nhiễu có thể làm giảm chất lượng câu trả lời.
+
+Những tài liệu không đạt ngưỡng sẽ bị loại bỏ. Nếu sau bước lọc không còn tài liệu nào, hệ thống sẽ xác định rằng không có thông tin phù hợp trong cơ sở tri thức và thông báo cho người dùng thay vì cố gắng sinh câu trả lời không có căn cứ.
+
+**Flowchart Chi Tiết**
 
 ```mermaid
 flowchart TD
