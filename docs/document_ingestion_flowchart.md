@@ -27,19 +27,11 @@ Luồng tải lên và xử lý tài liệu là quá trình chuyển đổi các
 
 ### 2.1 Tổng Quan Luồng Xử Lý
 
-Luồng xử lý tài liệu được thiết kế theo hai bước riêng biệt: tải lên (upload) và xử lý (ingest). Việc tách riêng hai bước này cho phép người dùng tải nhiều file lên trước, sau đó chọn lọc và xử lý từng file theo nhu cầu.
+Khi người dùng tải tài liệu lên hệ thống, quá trình xử lý bắt đầu bằng việc kiểm tra định dạng file. Hệ thống chỉ chấp nhận các định dạng được hỗ trợ bao gồm PDF, DOCX, TXT và hình ảnh. Nếu định dạng không hợp lệ, tài liệu bị từ chối ngay lập tức. Tiếp theo, hệ thống kiểm tra kích thước file để đảm bảo không vượt quá giới hạn cho phép. File quá lớn cũng sẽ bị từ chối. Sau khi vượt qua hai bước kiểm tra này, file được lưu vào hệ thống.
 
-**Giai đoạn Upload**
+Hệ thống tiến hành xác định loại tài liệu dựa trên phần mở rộng. Nếu là file DOCX, hệ thống phân tích bằng thư viện python-docx để trích xuất văn bản, bảng biểu và hình ảnh nhúng. Nếu là file TXT, hệ thống đọc trực tiếp nội dung văn bản. Nếu là file hình ảnh, hệ thống áp dụng OCR kết hợp với mô hình Vision để nhận dạng và mô tả nội dung. Nếu không phải các loại trên thì đó là file PDF, hệ thống sử dụng PyMuPDF để trích xuất văn bản và bảng biểu từ từng trang. Kết quả từ tất cả các phương pháp phân tích đều cho ra nội dung thô dạng văn bản.
 
-Khi người dùng chọn file để tải lên, hệ thống thực hiện một loạt kiểm tra trước khi chấp nhận file. Đầu tiên, hệ thống xác minh định dạng file có nằm trong danh sách được hỗ trợ hay không, bao gồm PDF, DOCX, TXT và các định dạng hình ảnh phổ biến. Tiếp theo, hệ thống kiểm tra kích thước file để đảm bảo không vượt quá giới hạn 50 megabyte. Nếu cả hai điều kiện đều thỏa mãn, file được lưu vào thư mục upload trên server và hệ thống trả về thông báo thành công kèm thông tin về file đã tải.
-
-**Giai đoạn Ingest**
-
-Sau khi file đã được tải lên, người dùng gọi API ingest để bắt đầu quá trình xử lý. Hệ thống xác định loại file dựa trên phần mở rộng và áp dụng phương pháp phân tích phù hợp. Với file PDF, hệ thống trích xuất văn bản từ từng trang và nhận dạng các bảng biểu. Với file DOCX, ngoài văn bản và bảng, hệ thống còn trích xuất hình ảnh nhúng và áp dụng OCR để đọc nội dung trong ảnh. Với file hình ảnh, hệ thống sử dụng kết hợp OCR và mô hình vision để mô tả nội dung.
-
-Sau khi trích xuất được toàn bộ nội dung, hệ thống tiến hành chia nhỏ văn bản thành các đoạn (chunks) có kích thước phù hợp. Quá trình chia chunks có thể sử dụng phương pháp ngữ nghĩa (semantic chunking) để giữ nguyên các khối code, bảng biểu và mô tả thanh ghi, hoặc phương pháp đơn giản chia theo số từ.
-
-Mỗi chunk sau đó được chuyển đổi thành vector thông qua mô hình embedding BGE-M3, tạo ra cả vector đặc để tìm kiếm ngữ nghĩa và vector thưa để tìm kiếm từ khóa. Các vector này được lưu vào ChromaDB, trong khi văn bản gốc và metadata được lưu vào Redis. Cuối cùng, hệ thống xóa bộ nhớ đệm của các câu hỏi cũ để đảm bảo những truy vấn tiếp theo có thể tìm thấy tài liệu mới.
+Từ nội dung thô, hệ thống thực hiện hai luồng xử lý song song. Luồng thứ nhất kết hợp nội dung thô với các thông tin metadata như tên file, loại tài liệu và thời gian xử lý, sau đó lưu vào Redis. Luồng thứ hai chia nhỏ nội dung thô thành các đoạn văn bản theo ngữ nghĩa hoặc theo số từ, tạo ra danh sách các chunk. Mỗi chunk được đưa qua mô hình embedding BGE-M3 để tạo ra vector đặc và vector thưa, sau đó lưu vào ChromaDB. Sau khi cả hai luồng lưu trữ hoàn tất, hệ thống xóa lịch sử câu hỏi đã lưu trữ trong cache để đảm bảo các truy vấn tiếp theo sẽ tìm kiếm trên dữ liệu mới nhất.
 
 ### 2.2 Flowchart Tổng Quan
 
