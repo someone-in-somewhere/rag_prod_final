@@ -61,7 +61,45 @@ Hệ thống RAG (Retrieval-Augmented Generation) Chatbot là một hệ thống
 
 ## 3. Flowchart Luồng Hỏi Đáp
 
-### 3.1 Flowchart Tổng Quan (Mermaid)
+### 3.1 Tổng Quan Luồng Hỏi Đáp
+
+Luồng hỏi đáp của hệ thống RAG Chatbot được thiết kế theo mô hình xử lý tuần tự với nhiều điểm kiểm tra và phân nhánh để đảm bảo tính chính xác và hiệu quả của câu trả lời. Dưới đây là mô tả chi tiết từng giai đoạn trong quá trình xử lý một câu hỏi từ người dùng.
+
+**Giai đoạn 1: Tiếp nhận và kiểm tra đầu vào**
+
+Khi người dùng gửi câu hỏi đến hệ thống thông qua giao diện web, yêu cầu sẽ được gửi đến API endpoint của server. Tại đây, hệ thống thực hiện bước kiểm tra tham số đầu tiên để đảm bảo dữ liệu hợp lệ. Cụ thể, câu hỏi phải có độ dài từ 1 đến 2000 ký tự, số lượng tài liệu truy xuất phải nằm trong khoảng 1 đến 20, và số token tối đa cho câu trả lời phải từ 100 đến 4096. Nếu bất kỳ tham số nào không thỏa mãn điều kiện, hệ thống sẽ từ chối yêu cầu và trả về thông báo lỗi cho người dùng.
+
+**Giai đoạn 2: Xử lý ngôn ngữ và kiểm tra bộ nhớ đệm**
+
+Sau khi xác nhận tham số hợp lệ, hệ thống tiến hành phát hiện ngôn ngữ của câu hỏi bằng cách đếm số lượng ký tự tiếng Việt có dấu. Nếu câu hỏi chứa nhiều hơn hai ký tự tiếng Việt, hệ thống xác định đây là câu hỏi tiếng Việt và sẽ sử dụng prompt tiếng Việt cho các bước tiếp theo. Ngược lại, hệ thống mặc định xử lý như câu hỏi tiếng Anh.
+
+Tiếp theo, hệ thống kiểm tra xem câu hỏi này đã được xử lý trước đó hay chưa bằng cách tra cứu trong bộ nhớ đệm. Khóa tra cứu được tạo từ ba thành phần: nội dung câu hỏi, số lượng tài liệu cần truy xuất và chế độ tìm kiếm. Nếu tìm thấy kết quả đã lưu, hệ thống bỏ qua bước tìm kiếm tốn thời gian và chuyển thẳng đến giai đoạn chuẩn bị ngữ cảnh. Điều này giúp giảm đáng kể thời gian phản hồi cho những câu hỏi lặp lại.
+
+**Giai đoạn 3: Tìm kiếm thông tin liên quan**
+
+Trong trường hợp không tìm thấy kết quả trong bộ nhớ đệm, hệ thống tiến hành tạo vector biểu diễn cho câu hỏi bằng mô hình BGE-M3. Mô hình này tạo ra hai loại vector: vector đặc (dense vector) với 1024 chiều để nắm bắt ý nghĩa ngữ nghĩa, và vector thưa (sparse vector) chứa trọng số của các từ khóa quan trọng.
+
+Hai loại vector này được sử dụng song song cho hai phương pháp tìm kiếm khác nhau. Phương pháp tìm kiếm ngữ nghĩa sử dụng vector đặc để tìm các đoạn văn bản có ý nghĩa tương tự với câu hỏi, ngay cả khi không chứa chính xác các từ khóa. Phương pháp tìm kiếm từ khóa sử dụng vector thưa để tìm các đoạn văn bản chứa chính xác các thuật ngữ quan trọng trong câu hỏi.
+
+Kết quả từ hai phương pháp được kết hợp theo công thức có trọng số, trong đó tìm kiếm ngữ nghĩa đóng góp 70% và tìm kiếm từ khóa đóng góp 30% vào điểm số cuối cùng. Sau đó, hệ thống lọc bỏ những kết quả có điểm số dưới ngưỡng 0.4 để đảm bảo chỉ giữ lại những đoạn văn bản thực sự liên quan.
+
+Nếu sau bước lọc không còn đoạn văn bản nào đạt yêu cầu, hệ thống xác định rằng không có thông tin phù hợp trong cơ sở tri thức và chuyển đến thông báo "không có thông tin" cho người dùng.
+
+**Giai đoạn 4: Chuẩn bị ngữ cảnh và sinh câu trả lời**
+
+Với những đoạn văn bản đạt ngưỡng, hệ thống tiến hành định dạng chúng thành một văn bản ngữ cảnh có cấu trúc rõ ràng. Mỗi đoạn được đánh số thứ tự, ghi rõ nguồn tài liệu, vị trí trong tài liệu gốc và điểm số liên quan. Cách trình bày này giúp mô hình ngôn ngữ dễ dàng trích dẫn nguồn khi trả lời.
+
+Tiếp theo, hệ thống xây dựng prompt hoàn chỉnh bao gồm hai phần: chỉ thị hệ thống quy định vai trò và quy tắc cho mô hình ngôn ngữ, và nội dung người dùng chứa ngữ cảnh đã định dạng cùng câu hỏi cần trả lời. Prompt này được gửi đến máy chủ mô hình ngôn ngữ để sinh câu trả lời.
+
+**Giai đoạn 5: Kiểm tra và trả về kết quả**
+
+Sau khi nhận được câu trả lời từ mô hình ngôn ngữ, hệ thống thực hiện một bước kiểm tra quan trọng: xác định xem mô hình có báo hiệu rằng không tìm thấy thông tin phù hợp hay không. Nếu câu trả lời chứa cụm từ đặc biệt "NO_RELEVANT_INFO", điều đó có nghĩa là mặc dù có đoạn văn bản vượt ngưỡng điểm số, nhưng nội dung của chúng không đủ để trả lời câu hỏi cụ thể này. Trong trường hợp đó, hệ thống trả về thông báo lịch sự cho người dùng biết rằng không có thông tin về chủ đề được hỏi.
+
+Nếu câu trả lời hợp lệ, hệ thống đóng gói kết quả bao gồm câu trả lời, danh sách nguồn tham khảo, thông tin về ngôn ngữ và các số liệu thống kê về quá trình xử lý. Kết quả cuối cùng được trả về cho người dùng thông qua giao diện web.
+
+Toàn bộ luồng xử lý được thiết kế với hai lớp bảo vệ chống lại việc trả lời không có căn cứ: lớp lọc theo ngưỡng điểm số và lớp kiểm tra phản hồi từ mô hình ngôn ngữ. Điều này đảm bảo rằng hệ thống chỉ đưa ra những câu trả lời có cơ sở từ tài liệu thực tế, tránh tình trạng bịa đặt thông tin có thể gây hậu quả nghiêm trọng trong lĩnh vực lập trình nhúng.
+
+### 3.2 Flowchart Tổng Quan (Mermaid)
 
 ```mermaid
 flowchart TD
