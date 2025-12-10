@@ -138,43 +138,83 @@ Kết quả xử lý được lưu vào hai hệ thống lưu trữ khác nhau p
 
 Sau khi lưu trữ hoàn tất, hệ thống xóa bộ nhớ đệm của các câu hỏi đã xử lý trước đó. Điều này đảm bảo rằng những truy vấn tiếp theo sẽ tìm kiếm trong toàn bộ cơ sở tri thức bao gồm cả tài liệu mới, thay vì sử dụng kết quả cache cũ có thể thiếu thông tin từ tài liệu mới.
 
-### 3.6 Flowchart Chi Tiết - Phân Tích Tài Liệu
+### 3.6 Flowchart Chi Tiết - Phân Tích PDF
+
+Khi nhận được file PDF, hệ thống đầu tiên kiểm tra kích thước file không vượt quá 50 megabyte. Sau đó, hệ thống mở file bằng thư viện PyMuPDF và đếm số trang. Nếu số trang vượt quá 100, file bị từ chối để tránh quá tải bộ nhớ và thời gian xử lý quá lâu. Với các file hợp lệ, hệ thống duyệt qua từng trang để trích xuất văn bản và tìm kiếm các bảng biểu. Mỗi trang được đánh dấu số thứ tự để giữ nguyên cấu trúc tài liệu. Cuối cùng, toàn bộ văn bản và bảng biểu được ghép lại thành nội dung thô.
 
 ```mermaid
 flowchart TD
-    subgraph PDF["📄 PHÂN TÍCH PDF"]
-        A1[File PDF] --> A2[Mở file với PyMuPDF]
-        A2 --> A3{Số trang ≤ 100?}
-        A3 -->|Không| A4[❌ Quá nhiều trang]
-        A3 -->|Có| A5[Duyệt từng trang]
-        A5 --> A6[Trích xuất văn bản]
-        A5 --> A7[Trích xuất bảng]
-        A6 --> A8[Ghép nội dung]
-        A7 --> A8
-    end
-
-    subgraph DOCX["📝 PHÂN TÍCH DOCX"]
-        B1[File DOCX] --> B2[Mở file với python-docx]
-        B2 --> B3[Trích xuất paragraphs]
-        B2 --> B4[Trích xuất bảng]
-        B2 --> B5[Trích xuất hình ảnh]
-        B5 --> B6[OCR + Vision]
-        B3 --> B7[Ghép nội dung]
-        B4 --> B7
-        B6 --> B7
-    end
-
-    subgraph Image["🖼️ PHÂN TÍCH HÌNH ẢNH"]
-        C1[File ảnh] --> C2{Kích thước ≤ 20MB?}
-        C2 -->|Không| C3[❌ Ảnh quá lớn]
-        C2 -->|Có| C4[PaddleOCR]
-        C2 -->|Có| C5[Qwen2-VL Vision]
-        C4 --> C6[Kết hợp kết quả]
-        C5 --> C6
-    end
+    A[File PDF] --> B[Kiểm tra kích thước]
+    B -->|"> 50MB"| C[Từ chối: File quá lớn]
+    B -->|"≤ 50MB"| D[Mở file với PyMuPDF]
+    D --> E{Số trang ≤ 100?}
+    E -->|Không| F[Từ chối: Quá nhiều trang]
+    E -->|Có| G[Duyệt từng trang]
+    G --> H[Trích xuất văn bản]
+    G --> I[Tìm và trích xuất bảng]
+    H --> J[Ghép nội dung]
+    I --> J
+    J --> K[Nội dung thô]
 ```
 
-### 3.7 Flowchart Chi Tiết - Semantic Chunking
+### 3.7 Flowchart Chi Tiết - Phân Tích DOCX
+
+File DOCX không có khái niệm trang cố định như PDF, do đó hệ thống ước tính số trang dựa trên công thức: số từ chia 300 cộng với số bảng nhân 0.5 cộng với số ảnh nhân 0.3. Nếu ước tính vượt quá 100 trang, file bị từ chối. Với file hợp lệ, hệ thống trích xuất ba loại nội dung song song: các đoạn văn bản từ paragraphs với việc giữ nguyên định dạng heading, dữ liệu từ các bảng biểu, và hình ảnh nhúng trong tài liệu. Mỗi hình ảnh được xử lý bằng OCR và Vision để chuyển thành văn bản. Cuối cùng, tất cả nội dung được ghép lại.
+
+```mermaid
+flowchart TD
+    A[File DOCX] --> B[Kiểm tra kích thước]
+    B -->|"> 50MB"| C[Từ chối: File quá lớn]
+    B -->|"≤ 50MB"| D[Ước tính số trang]
+    D --> E["Công thức: số từ/300 + bảng×0.5 + ảnh×0.3"]
+    E --> F{Ước tính ≤ 100 trang?}
+    F -->|Không| G[Từ chối: Tài liệu quá dài]
+    F -->|Có| H[Trích xuất paragraphs]
+    F -->|Có| I[Trích xuất bảng biểu]
+    F -->|Có| J[Trích xuất hình ảnh nhúng]
+    J --> K[OCR + Vision]
+    H --> L[Ghép nội dung]
+    I --> L
+    K --> L
+    L --> M[Nội dung thô]
+```
+
+### 3.8 Flowchart Chi Tiết - Phân Tích TXT
+
+File văn bản thuần là loại đơn giản nhất để xử lý. Hệ thống chỉ cần kiểm tra kích thước file không vượt quá 50 megabyte, sau đó đọc toàn bộ nội dung với mã hóa UTF-8. Nội dung đọc được chính là nội dung thô, không cần qua bước xử lý nào khác.
+
+```mermaid
+flowchart TD
+    A[File TXT] --> B[Kiểm tra kích thước]
+    B -->|"> 50MB"| C[Từ chối: File quá lớn]
+    B -->|"≤ 50MB"| D[Đọc file UTF-8]
+    D --> E[Nội dung thô]
+```
+
+### 3.9 Flowchart Chi Tiết - Phân Tích Hình Ảnh
+
+File hình ảnh có giới hạn kích thước riêng là 20 megabyte, thấp hơn các loại file khác do việc xử lý ảnh tốn nhiều tài nguyên hơn. Sau khi kiểm tra kích thước, hệ thống xử lý ảnh bằng hai phương pháp song song. PaddleOCR nhận dạng và trích xuất văn bản có trong ảnh, hỗ trợ cả tiếng Việt và tiếng Anh. Qwen2-VL Vision tạo mô tả nội dung tổng thể của hình ảnh, đặc biệt hữu ích cho các sơ đồ, mạch điện và hình ảnh kỹ thuật. Kết quả từ hai phương pháp được kết hợp: nếu cả hai đều có kết quả thì ghép lại, nếu chỉ một phương pháp có kết quả thì sử dụng kết quả đó, nếu không có kết quả nào thì trả về thông báo không trích xuất được nội dung.
+
+```mermaid
+flowchart TD
+    A[File ảnh JPG/PNG] --> B[Kiểm tra kích thước]
+    B -->|"> 20MB"| C[Từ chối: Ảnh quá lớn]
+    B -->|"≤ 20MB"| D[PaddleOCR]
+    B -->|"≤ 20MB"| E[Qwen2-VL Vision]
+    D --> F[Văn bản trong ảnh]
+    E --> G[Mô tả nội dung ảnh]
+    F --> H{Có kết quả?}
+    G --> H
+    H -->|Cả hai| I["Kết hợp: Mô tả + OCR"]
+    H -->|Chỉ OCR| J[Chỉ văn bản OCR]
+    H -->|Chỉ Vision| K[Chỉ mô tả]
+    H -->|Không có| L[Không trích xuất được]
+    I --> M[Nội dung thô]
+    J --> M
+    K --> M
+```
+
+### 3.10 Flowchart Chi Tiết - Semantic Chunking
 
 ```mermaid
 flowchart TD
