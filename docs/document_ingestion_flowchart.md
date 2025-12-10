@@ -1,0 +1,255 @@
+# Báo Cáo Luồng Tải Lên và Xử Lý Tài Liệu
+
+## Mục Lục
+1. [Tổng Quan](#1-tổng-quan)
+2. [Luồng Xử Lý Tài Liệu](#2-luồng-xử-lý-tài-liệu)
+3. [Chi Tiết Từng Giai Đoạn](#3-chi-tiết-từng-giai-đoạn)
+4. [Giới Hạn Hệ Thống](#4-giới-hạn-hệ-thống)
+
+---
+
+## 1. Tổng Quan
+
+Luồng tải lên và xử lý tài liệu là quá trình chuyển đổi các file tài liệu thô (PDF, DOCX, TXT, hình ảnh) thành dạng có thể tìm kiếm được trong hệ thống RAG. Quá trình này bao gồm hai giai đoạn chính: tải file lên server và xử lý nội dung để lưu vào cơ sở dữ liệu vector.
+
+### Định dạng hỗ trợ
+
+| Định dạng | Mô tả | Xử lý đặc biệt |
+|-----------|-------|----------------|
+| PDF | Tài liệu PDF | Trích xuất text + bảng |
+| DOCX | Microsoft Word | Trích xuất text + bảng + hình ảnh (OCR) |
+| TXT | Văn bản thuần | Đọc trực tiếp |
+| JPG/PNG | Hình ảnh | OCR + Vision captioning |
+
+---
+
+## 2. Luồng Xử Lý Tài Liệu
+
+### 2.1 Tổng Quan Luồng Xử Lý
+
+Luồng xử lý tài liệu được thiết kế theo hai bước riêng biệt: tải lên (upload) và xử lý (ingest). Việc tách riêng hai bước này cho phép người dùng tải nhiều file lên trước, sau đó chọn lọc và xử lý từng file theo nhu cầu.
+
+**Giai đoạn Upload**
+
+Khi người dùng chọn file để tải lên, hệ thống thực hiện một loạt kiểm tra trước khi chấp nhận file. Đầu tiên, hệ thống xác minh định dạng file có nằm trong danh sách được hỗ trợ hay không, bao gồm PDF, DOCX, TXT và các định dạng hình ảnh phổ biến. Tiếp theo, hệ thống kiểm tra kích thước file để đảm bảo không vượt quá giới hạn 50 megabyte. Nếu cả hai điều kiện đều thỏa mãn, file được lưu vào thư mục upload trên server và hệ thống trả về thông báo thành công kèm thông tin về file đã tải.
+
+**Giai đoạn Ingest**
+
+Sau khi file đã được tải lên, người dùng gọi API ingest để bắt đầu quá trình xử lý. Hệ thống xác định loại file dựa trên phần mở rộng và áp dụng phương pháp phân tích phù hợp. Với file PDF, hệ thống trích xuất văn bản từ từng trang và nhận dạng các bảng biểu. Với file DOCX, ngoài văn bản và bảng, hệ thống còn trích xuất hình ảnh nhúng và áp dụng OCR để đọc nội dung trong ảnh. Với file hình ảnh, hệ thống sử dụng kết hợp OCR và mô hình vision để mô tả nội dung.
+
+Sau khi trích xuất được toàn bộ nội dung, hệ thống tiến hành chia nhỏ văn bản thành các đoạn (chunks) có kích thước phù hợp. Quá trình chia chunks có thể sử dụng phương pháp ngữ nghĩa (semantic chunking) để giữ nguyên các khối code, bảng biểu và mô tả thanh ghi, hoặc phương pháp đơn giản chia theo số từ.
+
+Mỗi chunk sau đó được chuyển đổi thành vector thông qua mô hình embedding BGE-M3, tạo ra cả vector đặc để tìm kiếm ngữ nghĩa và vector thưa để tìm kiếm từ khóa. Các vector này được lưu vào ChromaDB, trong khi văn bản gốc và metadata được lưu vào Redis. Cuối cùng, hệ thống xóa bộ nhớ đệm của các câu hỏi cũ để đảm bảo những truy vấn tiếp theo có thể tìm thấy tài liệu mới.
+
+### 2.2 Flowchart Tổng Quan
+
+```mermaid
+flowchart TD
+    subgraph Upload["📤 GIAI ĐOẠN UPLOAD"]
+        A[👤 Người dùng chọn file] --> B{Kiểm tra định dạng}
+        B -->|Không hợp lệ| C[❌ Từ chối file]
+        B -->|Hợp lệ| D{Kiểm tra kích thước}
+        D -->|Quá lớn| E[❌ File vượt giới hạn]
+        D -->|Hợp lệ| F[Lưu file vào server]
+        F --> G[✓ Upload thành công]
+    end
+
+    subgraph Ingest["⚙️ GIAI ĐOẠN XỬ LÝ"]
+        H[Gọi API /ingest] --> I{Xác định loại file}
+        I -->|PDF| J[Phân tích PDF]
+        I -->|DOCX| K[Phân tích DOCX]
+        I -->|TXT| L[Đọc văn bản]
+        I -->|Image| M[OCR + Vision]
+        J --> N[Nội dung thô]
+        K --> N
+        L --> N
+        M --> N
+    end
+
+    subgraph Chunking["✂️ CHIA NHỎ VĂN BẢN"]
+        N --> O{Phương pháp chunking}
+        O -->|Semantic| P[Chia theo ngữ nghĩa]
+        O -->|Simple| Q[Chia theo số từ]
+        P --> R[Danh sách chunks]
+        Q --> R
+    end
+
+    subgraph Embedding["🔢 TẠO VECTOR"]
+        R --> S[Mô hình BGE-M3]
+        S --> T[Vector đặc + Vector thưa]
+    end
+
+    subgraph Storage["💾 LƯU TRỮ"]
+        T --> U[Lưu vào ChromaDB]
+        T --> V[Lưu vào Redis]
+        U --> W[Xóa cache cũ]
+        V --> W
+        W --> X[✓ Xử lý hoàn tất]
+    end
+
+    G --> H
+```
+
+---
+
+## 3. Chi Tiết Từng Giai Đoạn
+
+### 3.1 Giai Đoạn Upload
+
+Giai đoạn upload đảm nhận việc tiếp nhận và lưu trữ file từ người dùng. Hệ thống thực hiện hai bước kiểm tra quan trọng trước khi chấp nhận file.
+
+Bước kiểm tra định dạng xác minh phần mở rộng của file có thuộc danh sách được hỗ trợ hay không. Danh sách này bao gồm các định dạng tài liệu phổ biến như PDF và DOCX, định dạng văn bản thuần TXT, cùng các định dạng hình ảnh JPG, JPEG và PNG. Nếu file có định dạng không được hỗ trợ, hệ thống từ chối ngay lập tức và thông báo cho người dùng biết các định dạng được chấp nhận.
+
+Bước kiểm tra kích thước đảm bảo file không vượt quá giới hạn 50 megabyte. Giới hạn này được đặt ra để tránh quá tải server và đảm bảo thời gian xử lý hợp lý. Với các tài liệu lớn hơn, người dùng được khuyến khích chia nhỏ thành nhiều file.
+
+Sau khi vượt qua cả hai bước kiểm tra, file được lưu vào thư mục upload trên server. Hệ thống trả về thông tin bao gồm tên file, đường dẫn lưu trữ, kích thước thực tế và trạng thái upload thành công.
+
+### 3.2 Giai Đoạn Phân Tích Tài Liệu
+
+Mỗi loại tài liệu được xử lý bằng phương pháp riêng biệt để trích xuất nội dung một cách tối ưu.
+
+**Phân tích PDF**
+
+Với file PDF, hệ thống sử dụng thư viện PyMuPDF để đọc từng trang. Ngoài việc trích xuất văn bản thuần, hệ thống còn nhận dạng và trích xuất các bảng biểu có trong tài liệu. Mỗi trang được đánh dấu số thứ tự để giữ nguyên cấu trúc tài liệu. Hệ thống giới hạn xử lý tối đa 100 trang để đảm bảo hiệu suất.
+
+**Phân tích DOCX**
+
+Với file Word, hệ thống trích xuất ba loại nội dung: văn bản từ các đoạn paragraph, dữ liệu từ các bảng biểu, và nội dung từ hình ảnh nhúng. Đặc biệt, các heading trong tài liệu được giữ nguyên định dạng để phản ánh cấu trúc phân cấp của nội dung. Hình ảnh nhúng trong file DOCX được trích xuất và xử lý bằng OCR kết hợp với mô hình vision để mô tả nội dung.
+
+**Phân tích hình ảnh**
+
+Với file hình ảnh, hệ thống áp dụng hai phương pháp song song. OCR sử dụng PaddleOCR để nhận dạng văn bản trong ảnh, hỗ trợ cả tiếng Việt và tiếng Anh. Vision captioning sử dụng mô hình Qwen2-VL để tạo mô tả nội dung tổng thể của hình ảnh. Kết quả từ hai phương pháp được kết hợp để tạo ra nội dung văn bản đầy đủ nhất.
+
+### 3.3 Giai Đoạn Chia Chunks
+
+Sau khi trích xuất được nội dung thô, hệ thống tiến hành chia nhỏ thành các đoạn có kích thước phù hợp cho việc tìm kiếm và xử lý. Hệ thống hỗ trợ hai phương pháp chunking.
+
+**Semantic Chunking**
+
+Phương pháp này phân tích cấu trúc ngữ nghĩa của văn bản để xác định các điểm chia tự nhiên. Hệ thống nhận dạng các loại nội dung đặc biệt như khối code, bảng biểu, mô tả thanh ghi và heading. Những nội dung này được giữ nguyên trong một chunk thay vì bị cắt ngang giữa chừng. Khi một khối code hoặc bảng có kích thước lớn hơn 50 từ, nó được tách thành chunk riêng biệt để đảm bảo tính toàn vẹn.
+
+**Simple Chunking**
+
+Phương pháp đơn giản chia văn bản theo số từ cố định. Mỗi chunk chứa tối đa 512 từ với 50 từ overlap giữa các chunk liên tiếp. Overlap giúp đảm bảo ngữ cảnh không bị mất khi một câu hoặc ý tưởng nằm ở ranh giới giữa hai chunk.
+
+### 3.4 Giai Đoạn Tạo Embedding
+
+Mỗi chunk được chuyển đổi thành vector thông qua mô hình BGE-M3. Mô hình này tạo ra đồng thời hai loại vector: vector đặc 1024 chiều biểu diễn ý nghĩa ngữ nghĩa, và vector thưa chứa trọng số của các từ khóa quan trọng. Cả hai loại vector đều được sử dụng cho việc tìm kiếm lai (hybrid search) trong quá trình hỏi đáp.
+
+### 3.5 Giai Đoạn Lưu Trữ
+
+Kết quả xử lý được lưu vào hai hệ thống lưu trữ khác nhau phục vụ các mục đích khác nhau.
+
+**ChromaDB** lưu trữ các vector embedding cùng với nội dung chunk và metadata. Cơ sở dữ liệu này được sử dụng cho việc tìm kiếm ngữ nghĩa trong quá trình hỏi đáp. Vector đặc được lưu trữ trong chỉ mục HNSW để tìm kiếm nhanh, trong khi vector thưa được lưu dưới dạng JSON trong metadata để xây dựng chỉ mục đảo ngược.
+
+**Redis** lưu trữ văn bản gốc đầy đủ của tài liệu cùng với metadata tổng hợp. Thông tin này được sử dụng để hiển thị danh sách tài liệu, xem chi tiết tài liệu và hỗ trợ việc xóa tài liệu khi cần.
+
+Sau khi lưu trữ hoàn tất, hệ thống xóa bộ nhớ đệm của các câu hỏi đã xử lý trước đó. Điều này đảm bảo rằng những truy vấn tiếp theo sẽ tìm kiếm trong toàn bộ cơ sở tri thức bao gồm cả tài liệu mới, thay vì sử dụng kết quả cache cũ có thể thiếu thông tin từ tài liệu mới.
+
+### 3.6 Flowchart Chi Tiết - Phân Tích Tài Liệu
+
+```mermaid
+flowchart TD
+    subgraph PDF["📄 PHÂN TÍCH PDF"]
+        A1[File PDF] --> A2[Mở file với PyMuPDF]
+        A2 --> A3{Số trang ≤ 100?}
+        A3 -->|Không| A4[❌ Quá nhiều trang]
+        A3 -->|Có| A5[Duyệt từng trang]
+        A5 --> A6[Trích xuất văn bản]
+        A5 --> A7[Trích xuất bảng]
+        A6 --> A8[Ghép nội dung]
+        A7 --> A8
+    end
+
+    subgraph DOCX["📝 PHÂN TÍCH DOCX"]
+        B1[File DOCX] --> B2[Mở file với python-docx]
+        B2 --> B3[Trích xuất paragraphs]
+        B2 --> B4[Trích xuất bảng]
+        B2 --> B5[Trích xuất hình ảnh]
+        B5 --> B6[OCR + Vision]
+        B3 --> B7[Ghép nội dung]
+        B4 --> B7
+        B6 --> B7
+    end
+
+    subgraph Image["🖼️ PHÂN TÍCH HÌNH ẢNH"]
+        C1[File ảnh] --> C2{Kích thước ≤ 20MB?}
+        C2 -->|Không| C3[❌ Ảnh quá lớn]
+        C2 -->|Có| C4[PaddleOCR]
+        C2 -->|Có| C5[Qwen2-VL Vision]
+        C4 --> C6[Kết hợp kết quả]
+        C5 --> C6
+    end
+```
+
+### 3.7 Flowchart Chi Tiết - Semantic Chunking
+
+```mermaid
+flowchart TD
+    A[Văn bản thô] --> B[Tìm điểm chia ngữ nghĩa]
+    B --> C[Nhận dạng heading]
+    B --> D[Nhận dạng code block]
+    B --> E[Nhận dạng bảng]
+    B --> F[Nhận dạng mô tả thanh ghi]
+    B --> G[Nhận dạng paragraph]
+
+    C --> H[Danh sách segments]
+    D --> H
+    E --> H
+    F --> H
+    G --> H
+
+    H --> I{Segment là code/table/register?}
+    I -->|Có| J{Kích thước > 50 từ?}
+    J -->|Có| K[Tạo chunk riêng]
+    J -->|Không| L[Ghép vào chunk hiện tại]
+    I -->|Không| L
+
+    L --> M{Chunk hiện tại > 512 từ?}
+    M -->|Có| N[Lưu chunk + tạo overlap]
+    M -->|Không| O[Tiếp tục ghép]
+
+    K --> P[Danh sách chunks]
+    N --> P
+    O --> I
+```
+
+---
+
+## 4. Giới Hạn Hệ Thống
+
+### 4.1 Bảng Giới Hạn
+
+| Tham số | Giá trị | Mô tả |
+|---------|---------|-------|
+| `MAX_FILE_SIZE_MB` | 50 MB | Kích thước file tối đa |
+| `MAX_PDF_PAGES` | 100 trang | Số trang PDF tối đa |
+| `MAX_IMAGE_SIZE_MB` | 20 MB | Kích thước ảnh tối đa |
+| `CHUNK_SIZE` | 512 từ | Kích thước chunk mặc định |
+| `CHUNK_OVERLAP` | 50 từ | Số từ overlap giữa chunks |
+
+### 4.2 Định Dạng Được Hỗ Trợ
+
+| Định dạng | Extension | Thư viện xử lý |
+|-----------|-----------|----------------|
+| PDF | .pdf | PyMuPDF |
+| Word | .docx | python-docx |
+| Text | .txt | Built-in |
+| JPEG | .jpg, .jpeg | PaddleOCR + Qwen2-VL |
+| PNG | .png | PaddleOCR + Qwen2-VL |
+
+---
+
+## 5. Kết Luận
+
+Luồng tải lên và xử lý tài liệu được thiết kế với các đặc điểm:
+
+1. **Linh hoạt**: Hỗ trợ nhiều định dạng tài liệu phổ biến
+2. **Thông minh**: Semantic chunking giữ nguyên cấu trúc code và bảng
+3. **Toàn diện**: Kết hợp OCR và Vision cho nội dung hình ảnh
+4. **Hiệu quả**: Tạo cả dense và sparse vectors cho hybrid search
+5. **Đồng bộ**: Tự động xóa cache khi có tài liệu mới
+
+---
+
+*Báo cáo được tạo - Ngày: 2025-12-10*
