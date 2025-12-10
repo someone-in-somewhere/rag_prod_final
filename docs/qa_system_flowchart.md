@@ -169,39 +169,39 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    subgraph Query["🔤 QUERY EMBEDDING"]
-        A[Câu hỏi người dùng] --> B[BGE-M3 Encoder]
-        B --> C[Dense Vector<br/>1024 dimensions]
-        B --> D[Sparse Vector<br/>Lexical weights]
+    subgraph Query["🔤 TẠO EMBEDDING CHO CÂU HỎI"]
+        A[Câu hỏi người dùng] --> B[Mô hình BGE-M3]
+        B --> C[Vector đặc<br/>1024 chiều]
+        B --> D[Vector thưa<br/>trọng số từ khóa]
     end
 
-    subgraph Dense["🎯 DENSE SEARCH"]
-        C --> E[ChromaDB Query]
-        E --> F[HNSW Index Search]
-        F --> G[Cosine Similarity]
-        G --> H[Top-K × 2 Results]
+    subgraph Dense["🎯 TÌM KIẾM NGỮ NGHĨA"]
+        C --> E[Truy vấn CSDL vector]
+        E --> F[Tìm kiếm trong chỉ mục]
+        F --> G[Tính độ tương đồng]
+        G --> H[Lấy gấp đôi kết quả]
     end
 
-    subgraph Sparse["📝 SPARSE SEARCH"]
-        D --> I[Inverted Index Lookup]
-        I --> J[Token Matching]
-        J --> K[BM25-like Scoring]
-        K --> L[Top-K × 2 Results]
+    subgraph Sparse["📝 TÌM KIẾM TỪ KHÓA"]
+        D --> I[Tra cứu chỉ mục đảo ngược]
+        I --> J[Khớp từ khóa]
+        J --> K[Tính điểm trọng số từ]
+        K --> L[Lấy gấp đôi kết quả]
     end
 
-    subgraph Fusion["🔀 SCORE FUSION"]
-        H --> M[Normalize Dense Scores]
-        L --> N[Normalize Sparse Scores]
-        M --> O[Combined Score =<br/>0.7 × dense + 0.3 × sparse]
+    subgraph Fusion["🔀 KẾT HỢP ĐIỂM SỐ"]
+        H --> M[Chuẩn hóa điểm ngữ nghĩa]
+        L --> N[Chuẩn hóa điểm từ khóa]
+        M --> O[Điểm kết hợp =<br/>0.7 × ngữ nghĩa + 0.3 × từ khóa]
         N --> O
-        O --> P[Sort by Score DESC]
-        P --> Q[Select Top-K]
+        O --> P[Sắp xếp theo điểm giảm dần]
+        P --> Q[Chọn K kết quả tốt nhất]
     end
 
-    subgraph Filter["✅ FILTERING"]
-        Q --> R{Score ≥ 0.4?}
-        R -->|Yes| S[✓ Relevant Document]
-        R -->|No| T[✗ Filtered Out]
+    subgraph Filter["✅ LỌC THEO NGƯỠNG"]
+        Q --> R{Điểm số ≥ 0.4?}
+        R -->|Có| S[✓ Tài liệu phù hợp]
+        R -->|Không| T[✗ Bị loại bỏ]
     end
 ```
 
