@@ -187,9 +187,11 @@ Song song với tìm kiếm ngữ nghĩa, hệ thống sử dụng vector thưa 
 
 **Kết hợp và chuẩn hóa điểm số**
 
-Sau khi có kết quả từ cả hai phương pháp tìm kiếm, hệ thống tiến hành chuẩn hóa điểm số để đưa chúng về cùng một thang đo. Điểm số từ tìm kiếm ngữ nghĩa và tìm kiếm từ khóa được chuẩn hóa riêng biệt bằng cách chia cho giá trị lớn nhất trong mỗi nhóm.
+Sau khi có kết quả từ cả hai phương pháp tìm kiếm, hệ thống tiến hành chuẩn hóa điểm số để đưa chúng về cùng một thang đo. Việc chuẩn hóa là cần thiết vì hai phương pháp trả về điểm số theo thang đo khác nhau: tìm kiếm ngữ nghĩa cho điểm từ 0 đến 1 (độ tương đồng cosine), trong khi tìm kiếm từ khóa cho điểm từ 0 đến vô cùng (tích trọng số). Không thể cộng trực tiếp hai loại điểm này vì điểm từ khóa sẽ lấn át hoàn toàn.
 
-Tiếp theo, hệ thống kết hợp hai điểm số theo công thức có trọng số: điểm kết hợp bằng 70% điểm ngữ nghĩa cộng với 30% điểm từ khóa. Tỷ lệ này được chọn dựa trên thực nghiệm, phản ánh việc ưu tiên khả năng hiểu ngữ nghĩa trong khi vẫn đảm bảo tìm được các kết quả khớp chính xác về từ khóa.
+Hệ thống chuẩn hóa bằng cách chia mỗi điểm cho giá trị lớn nhất trong nhóm của nó, đưa cả hai về thang 0-1. Ví dụ, với 4 tài liệu có điểm ngữ nghĩa (0.85, 0.72, 0.68, 0.60) và điểm từ khóa (12.5, 8.3, 0, 5.1), sau khi chuẩn hóa ngữ nghĩa (chia cho 0.85) được (1.00, 0.85, 0.80, 0.71) và chuẩn hóa từ khóa (chia cho 12.5) được (1.00, 0.66, 0.00, 0.41).
+
+Tiếp theo, hệ thống kết hợp hai điểm số theo công thức có trọng số: điểm kết hợp bằng 70% điểm ngữ nghĩa cộng với 30% điểm từ khóa. Áp dụng công thức này cho ví dụ trên: tài liệu 1 đạt 1.00, tài liệu 2 đạt 0.79, tài liệu 3 đạt 0.56, và tài liệu 4 đạt 0.62. Kết quả xếp hạng là tài liệu 1 > 2 > 4 > 3. Đáng chú ý, tài liệu 3 dù có điểm ngữ nghĩa cao (0.68) nhưng xếp cuối vì không khớp từ khóa nào, trong khi tài liệu 4 với điểm ngữ nghĩa thấp hơn (0.60) lại được xếp cao hơn nhờ có khớp từ khóa.
 
 Các tài liệu được sắp xếp theo điểm kết hợp từ cao xuống thấp, và hệ thống chọn ra K tài liệu có điểm cao nhất theo yêu cầu của người dùng.
 
