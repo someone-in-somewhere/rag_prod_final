@@ -205,7 +205,35 @@ flowchart TD
     end
 ```
 
-### 3.3 Flowchart Chi Tiết - Quá Trình Generation
+### 3.3 Quá Trình Generation (Sinh Câu Trả Lời)
+
+Sau khi hoàn tất quá trình tìm kiếm và lọc tài liệu, hệ thống bước vào giai đoạn sinh câu trả lời. Đây là giai đoạn then chốt, nơi mô hình ngôn ngữ lớn (LLM) sử dụng ngữ cảnh đã thu thập để tạo ra câu trả lời phù hợp cho người dùng.
+
+**Đầu vào của quá trình**
+
+Quá trình sinh câu trả lời nhận ba đầu vào chính: danh sách các đoạn tài liệu đã được lọc từ bước trước, câu hỏi gốc của người dùng, và thông tin về ngôn ngữ đã phát hiện. Ba yếu tố này kết hợp với nhau để tạo nên một prompt hoàn chỉnh gửi đến mô hình ngôn ngữ.
+
+**Định dạng ngữ cảnh**
+
+Trước tiên, hệ thống định dạng các đoạn tài liệu thành một văn bản ngữ cảnh có cấu trúc rõ ràng. Mỗi đoạn được đánh số thứ tự, kèm theo thông tin về nguồn tài liệu gốc, vị trí của đoạn trong tài liệu và điểm số liên quan. Cách trình bày này giúp mô hình ngôn ngữ dễ dàng tham chiếu và trích dẫn nguồn khi đưa ra câu trả lời. Ví dụ, một đoạn ngữ cảnh có thể được định dạng như sau: "[1] Nguồn: tai_lieu.pdf (đoạn 5, điểm: 0.87)" theo sau là nội dung của đoạn văn bản đó.
+
+**Xây dựng prompt**
+
+Dựa trên ngôn ngữ đã phát hiện, hệ thống lựa chọn prompt hệ thống (system prompt) phù hợp. Nếu câu hỏi bằng tiếng Việt, hệ thống sử dụng prompt tiếng Việt với các chỉ thị rõ ràng về vai trò chuyên gia lập trình nhúng và quy tắc trả lời. Tương tự, câu hỏi tiếng Anh sẽ sử dụng prompt tiếng Anh tương ứng.
+
+Prompt hoàn chỉnh được ghép từ bốn thành phần: chỉ thị hệ thống quy định vai trò và quy tắc cho mô hình, ngữ cảnh đã định dạng chứa thông tin từ tài liệu, câu hỏi gốc của người dùng, và hướng dẫn cách trả lời. Điểm quan trọng trong prompt là quy tắc yêu cầu mô hình chỉ trả lời dựa trên ngữ cảnh được cung cấp và phải trả về cụm từ đặc biệt "NO_RELEVANT_INFO" nếu không tìm thấy thông tin phù hợp.
+
+**Gọi mô hình ngôn ngữ**
+
+Prompt hoàn chỉnh được gửi đến máy chủ mô hình ngôn ngữ (vLLM) để sinh câu trả lời. Hệ thống được thiết kế với cơ chế retry để đảm bảo độ tin cậy: nếu lần gọi đầu tiên thất bại do lỗi mạng hoặc máy chủ quá tải, hệ thống sẽ tự động thử lại với thời gian chờ tăng dần (exponential backoff). Quá trình này được lặp lại tối đa ba lần trước khi báo lỗi cho người dùng.
+
+**Kiểm tra và xác thực kết quả**
+
+Sau khi nhận được câu trả lời từ mô hình, hệ thống thực hiện một bước kiểm tra quan trọng: xác định xem câu trả lời có chứa cụm từ "NO_RELEVANT_INFO" hay không. Nếu có, điều này cho thấy mặc dù có tài liệu vượt ngưỡng điểm số, nhưng nội dung của chúng không đủ để trả lời câu hỏi cụ thể này. Trong trường hợp đó, hệ thống trả về thông báo lịch sự bằng ngôn ngữ phù hợp, cho người dùng biết rằng không tìm thấy thông tin về chủ đề được hỏi và gợi ý upload thêm tài liệu.
+
+Nếu câu trả lời hợp lệ, hệ thống tiến hành đóng gói kết quả thành một đối tượng phản hồi hoàn chỉnh, bao gồm câu trả lời, danh sách nguồn tham khảo với điểm số, thông tin ngôn ngữ và các số liệu thống kê về thời gian xử lý. Kết quả cuối cùng được trả về cho người dùng thông qua API.
+
+**Flowchart Chi Tiết**
 
 ```mermaid
 flowchart TD
