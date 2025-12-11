@@ -19,29 +19,37 @@ class OCREngine:
         return cls._instance
     
     def _init_ocr(self):
-        print("Initializing PaddleOCR (GPU mode)...")
-        self.reader = PaddleOCR(
-            use_angle_cls=True,  # Detect rotated text
-            lang='vi',  # Vietnamese (includes English)
-            use_gpu=True,
-            show_log=False
-        )
-        print("PaddleOCR ready")
+        print("Initializing PaddleOCR...")
+        try:
+            # PaddleOCR 3.x không còn use_gpu, tự động detect GPU
+            self.reader = PaddleOCR(
+                use_angle_cls=True,  # Detect rotated text
+                lang='vi',  # Vietnamese (includes English)
+                show_log=False
+            )
+            print("PaddleOCR ready")
+        except Exception as e:
+            print(f"PaddleOCR init error: {e}")
+            self.reader = None
     
     def extract_text(self, image_path: str) -> str:
         """Extract text từ ảnh"""
         try:
+            if self.reader is None:
+                print("OCR reader not initialized")
+                return ""
+
             result = self.reader.ocr(image_path, cls=True)
             if not result or not result[0]:
                 return ""
-            
+
             lines = []
             for line in result[0]:
                 text = line[1][0]  # text content
                 conf = line[1][1]  # confidence
                 if conf > 0.5:
                     lines.append(text)
-            
+
             return "\n".join(lines)
         except Exception as e:
             print(f"OCR error: {e}")
@@ -54,35 +62,63 @@ class VisionCaptioner:
     _model = None
     _processor = None
     _loaded = False
-    
+    _disabled = False  # Disable khi không đủ VRAM
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
-    
+
+    def _check_vram(self, required_gb: float = 10.0) -> bool:
+        """Kiểm tra VRAM còn trống"""
+        try:
+            if torch.cuda.is_available():
+                free_memory = torch.cuda.mem_get_info()[0] / (1024**3)  # GB
+                print(f"Available VRAM: {free_memory:.2f} GB, required: {required_gb} GB")
+                return free_memory >= required_gb
+            return False
+        except:
+            return False
+
     def load_model(self):
-        """Load model nếu chưa load"""
+        """Load model nếu chưa load và đủ VRAM"""
         if self._loaded:
-            return
-        
-        print(f"Loading Vision model: {VISION_MODEL}")
-        self._model = Qwen2VLForConditionalGeneration.from_pretrained(
-            VISION_MODEL,
-            torch_dtype=torch.float16,
-            device_map="auto",
-            trust_remote_code=True
-        )
-        self._processor = AutoProcessor.from_pretrained(
-            VISION_MODEL,
-            trust_remote_code=True
-        )
-        self._loaded = True
-        print("Vision model loaded and kept in memory")
+            return True
+
+        if self._disabled:
+            return False
+
+        # Kiểm tra VRAM (cần ~10GB cho Qwen2-VL-7B)
+        if not self._check_vram(10.0):
+            print("WARNING: Not enough VRAM for Vision model. Skipping image captioning.")
+            self._disabled = True
+            return False
+
+        try:
+            print(f"Loading Vision model: {VISION_MODEL}")
+            self._model = Qwen2VLForConditionalGeneration.from_pretrained(
+                VISION_MODEL,
+                torch_dtype=torch.float16,
+                device_map="auto",
+                trust_remote_code=True
+            )
+            self._processor = AutoProcessor.from_pretrained(
+                VISION_MODEL,
+                trust_remote_code=True
+            )
+            self._loaded = True
+            print("Vision model loaded and kept in memory")
+            return True
+        except Exception as e:
+            print(f"Failed to load Vision model: {e}")
+            self._disabled = True
+            return False
     
     def caption_image(self, image_path: str, lang: str = "en") -> str:
         """Generate caption cho ảnh kỹ thuật"""
         try:
-            self.load_model()
+            if not self.load_model():
+                return ""  # Skip nếu không load được model
             
             if lang == "vi":
                 prompt = "Mô tả chi tiết hình ảnh kỹ thuật này, tập trung vào sơ đồ mạch, code, linh kiện, cấu hình chân, hoặc thông tin hệ thống nhúng."
