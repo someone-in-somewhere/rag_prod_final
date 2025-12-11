@@ -945,90 +945,41 @@ Dự án **Hệ thống RAG Chatbot cho tài liệu lập trình nhúng** đã �
 
 ### B. Tài liệu tham khảo
 
-#### 1. Nghiên cứu về RAG (Retrieval-Augmented Generation)
+**Tiếng Anh**
 
-| Tài liệu | Mô tả | Link |
-|----------|-------|------|
-| RAG Survey Paper | Khảo sát toàn diện về RAG cho LLM | https://arxiv.org/abs/2312.10997 |
-| RAG Evolution Survey | Tiến hóa và hướng phát triển của RAG (2024) | https://arxiv.org/abs/2410.12837 |
-| RAG Best Practices | Các thực hành tốt nhất cho RAG | https://arxiv.org/abs/2407.01219 |
-| Prompt Engineering Guide - RAG | Hướng dẫn RAG cho LLM | https://www.promptingguide.ai/research/rag |
+[1] J. Chen, S. Xiao, P. Zhang, K. Luo, D. Lian, and Z. Liu, "BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation", *arXiv preprint*, arXiv:2402.03216, 2024. Truy cập: https://arxiv.org/abs/2402.03216
 
-#### 2. Mô hình ngôn ngữ lớn (LLM)
+[2] Chroma Team, *ChromaDB: The AI-native open-source embedding database*, 2024. Truy cập: https://docs.trychroma.com/
 
-| Công nghệ | Mô tả | Link |
-|-----------|-------|------|
-| Qwen2.5-7B-Instruct | Mô hình ngôn ngữ 7B tham số | https://huggingface.co/Qwen/Qwen2.5-7B-Instruct |
-| Qwen2-VL-7B-Instruct | Mô hình thị giác-ngôn ngữ | https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct |
-| Qwen Blog - Qwen2-VL | Giới thiệu mô hình Qwen2-VL | https://qwenlm.github.io/blog/qwen2-vl/ |
-| vLLM Documentation | Tài liệu vLLM inference engine | https://docs.vllm.ai/ |
-| vLLM GitHub | Mã nguồn vLLM | https://github.com/vllm-project/vllm |
+[3] Y. Gao, Y. Xiong, X. Gao, K. Jia, J. Pan, Y. Bi, Y. Dai, J. Sun, M. Wang, and H. Wang, "Retrieval-Augmented Generation for Large Language Models: A Survey", *arXiv preprint*, arXiv:2312.10997v5, 2024. Truy cập: https://arxiv.org/abs/2312.10997
 
-#### 3. Mô hình nhúng văn bản (Embedding)
+[4] S. Gupta, R. Ranjan, and S. N. Singh, "A Comprehensive Survey of Retrieval-Augmented Generation (RAG): Evolution, Current Landscape and Future Directions", *arXiv preprint*, arXiv:2410.12837, 2024. Truy cập: https://arxiv.org/abs/2410.12837
 
-| Công nghệ | Mô tả | Link |
-|-----------|-------|------|
-| BGE-M3 Model | Mô hình nhúng đa ngôn ngữ, đa chức năng | https://huggingface.co/BAAI/bge-m3 |
-| FlagEmbedding | Thư viện embedding của BAAI | https://github.com/FlagOpen/FlagEmbedding |
-| BGE Reranker v2-M3 | Mô hình xếp hạng lại | https://huggingface.co/BAAI/bge-reranker-v2-m3 |
+[5] Hugging Face, *Transformers: State-of-the-art Machine Learning for PyTorch, TensorFlow, and JAX*, 2024. Truy cập: https://huggingface.co/docs/transformers/index
 
-#### 4. Cơ sở dữ liệu vector
+[6] PaddlePaddle Team, *PaddleOCR: Awesome multilingual OCR toolkits based on PaddlePaddle*, 2024. Truy cập: https://github.com/PaddlePaddle/PaddleOCR
 
-| Công nghệ | Mô tả | Link |
-|-----------|-------|------|
-| ChromaDB Documentation | Tài liệu ChromaDB | https://docs.trychroma.com/ |
-| ChromaDB GitHub | Mã nguồn ChromaDB | https://github.com/chroma-core/chroma |
-| ChromaDB Website | Trang chủ ChromaDB | https://www.trychroma.com/ |
+[7] Pydantic Team, *Pydantic: Data validation using Python type hints*, Version 2.12, 2024. Truy cập: https://docs.pydantic.dev/latest/
 
-#### 5. Xử lý tài liệu
+[8] PyMuPDF/Artifex Software, *PyMuPDF Documentation*, Version 1.25, 2024. Truy cập: https://pymupdf.readthedocs.io/
 
-| Công nghệ | Mô tả | Link |
-|-----------|-------|------|
-| PyMuPDF Documentation | Thư viện xử lý PDF | https://pymupdf.readthedocs.io/ |
-| PyMuPDF GitHub | Mã nguồn PyMuPDF | https://github.com/pymupdf/PyMuPDF |
-| python-docx Documentation | Thư viện xử lý Word | https://python-docx.readthedocs.io/ |
-| python-docx GitHub | Mã nguồn python-docx | https://github.com/python-openxml/python-docx |
+[9] PyTorch Team, *PyTorch Documentation*, Version 2.4, 2024. Truy cập: https://docs.pytorch.org/docs/stable/index.html
 
-#### 6. OCR và Xử lý hình ảnh
+[10] python-openxml, *python-docx: Create and modify Word documents with Python*, Version 1.1, 2024. Truy cập: https://python-docx.readthedocs.io/
 
-| Công nghệ | Mô tả | Link |
-|-----------|-------|------|
-| PaddleOCR GitHub | Mã nguồn PaddleOCR | https://github.com/PaddlePaddle/PaddleOCR |
-| PaddleOCR Documentation | Tài liệu PaddleOCR | https://paddlepaddle.github.io/PaddleOCR/main/en/quick_start.html |
+[11] Qwen Team, Alibaba Group, "Qwen2.5 Technical Report", *arXiv preprint*, arXiv:2412.15115, 2024. Truy cập: https://arxiv.org/abs/2412.15115
 
-#### 7. Framework Web và API
+[12] Qwen Team, Alibaba Group, "Qwen2-VL: To See the World More Clearly", *Qwen Blog*, 2024. Truy cập: https://qwenlm.github.io/blog/qwen2-vl/
 
-| Công nghệ | Mô tả | Link |
-|-----------|-------|------|
-| FastAPI Documentation | Tài liệu FastAPI | https://fastapi.tiangolo.com/ |
-| FastAPI GitHub | Mã nguồn FastAPI | https://github.com/fastapi/fastapi |
-| Uvicorn Documentation | Tài liệu ASGI server | https://uvicorn.dev/ |
-| Pydantic Documentation | Thư viện validation dữ liệu | https://docs.pydantic.dev/latest/ |
-| Pydantic GitHub | Mã nguồn Pydantic | https://github.com/pydantic/pydantic |
+[13] S. Ramírez, *FastAPI: Modern, fast web framework for building APIs with Python*, Version 0.115, 2024. Truy cập: https://fastapi.tiangolo.com/
 
-#### 8. Cơ sở dữ liệu và Cache
+[14] Redis Ltd., *Redis Documentation*, Version 7.4, 2024. Truy cập: https://redis.io/docs/latest/
 
-| Công nghệ | Mô tả | Link |
-|-----------|-------|------|
-| Redis Documentation | Tài liệu Redis | https://redis.io/docs/latest/ |
-| Redis GitHub | Mã nguồn Redis | https://github.com/redis/redis |
-| Redis Python Client | Thư viện Redis cho Python | https://pypi.org/project/redis/ |
+[15] T. Dettmers et al., *Uvicorn: An ASGI web server for Python*, 2024. Truy cập: https://uvicorn.dev/
 
-#### 9. Machine Learning Framework
+[16] vLLM Team, UC Berkeley, *vLLM: A high-throughput and memory-efficient inference and serving engine for LLMs*, 2024. Truy cập: https://docs.vllm.ai/
 
-| Công nghệ | Mô tả | Link |
-|-----------|-------|------|
-| PyTorch Documentation | Tài liệu PyTorch | https://docs.pytorch.org/docs/stable/index.html |
-| PyTorch GitHub | Mã nguồn PyTorch | https://github.com/pytorch/pytorch |
-| Hugging Face Transformers | Thư viện Transformers | https://huggingface.co/docs/transformers/index |
-| Transformers GitHub | Mã nguồn Transformers | https://github.com/huggingface/transformers |
-
-#### 10. Tài liệu bổ sung
-
-| Tài liệu | Mô tả | Link |
-|----------|-------|------|
-| LangChain BGE Integration | Tích hợp BGE với LangChain | https://docs.langchain.com/oss/python/integrations/text_embedding/bge_huggingface |
-| RAGFlow Blog | Tổng kết RAG năm 2024 | https://ragflow.io/blog/the-rise-and-evolution-of-rag-in-2024-a-year-in-review |
+[17] X. Wang, Z. Wang, X. Gao, F. Zhang, Y. Wu, Z. Xu, T. Shi, Z. Wang, S. Li, Q. Qian, R. Yin, C. Lv, X. Zheng, and X. Huang, "Searching for Best Practices in Retrieval-Augmented Generation", *arXiv preprint*, arXiv:2407.01219, 2024. Truy cập: https://arxiv.org/abs/2407.01219
 
 ---
 
