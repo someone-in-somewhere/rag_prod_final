@@ -21,11 +21,10 @@ class OCREngine:
     def _init_ocr(self):
         print("Initializing PaddleOCR...")
         try:
-            # PaddleOCR 3.x không còn use_gpu, tự động detect GPU
+            # PaddleOCR 3.x API đơn giản hơn
             self.reader = PaddleOCR(
                 use_angle_cls=True,  # Detect rotated text
-                lang='vi',  # Vietnamese (includes English)
-                show_log=False
+                lang='vi'  # Vietnamese (includes English)
             )
             print("PaddleOCR ready")
         except Exception as e:
@@ -88,8 +87,8 @@ class VisionCaptioner:
         if self._disabled:
             return False
 
-        # Kiểm tra VRAM (cần ~10GB cho Qwen2-VL-7B)
-        if not self._check_vram(10.0):
+        # Kiểm tra VRAM (cần ~18GB cho Qwen2-VL-7B khi generate)
+        if not self._check_vram(18.0):
             print("WARNING: Not enough VRAM for Vision model. Skipping image captioning.")
             self._disabled = True
             return False
