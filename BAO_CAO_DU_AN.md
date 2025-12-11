@@ -881,37 +881,51 @@ volumes:
 
 ---
 
-## 12. KẾT LUẬN
+## 12. KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN
 
-### 12.1. Tổng kết
+### 12.1. Kết luận
 
-Dự án **Embedded RAG Chatbot** là một hệ thống hoàn chỉnh để xây dựng chatbot trả lời câu hỏi dựa trên tài liệu kỹ thuật. Hệ thống kết hợp:
+#### 12.1.1. Tổng kết mục tiêu đã đạt được
 
-1. **Công nghệ RAG tiên tiến** với hybrid search (dense + sparse)
-2. **Xử lý tài liệu thông minh** với semantic chunking
-3. **Khả năng Vision & OCR** cho hình ảnh kỹ thuật
-4. **Hỗ trợ song ngữ** Tiếng Việt và Tiếng Anh
-5. **Inference nhanh** qua vLLM và các model tối ưu
-6. **Độ tin cậy cao** với retry logic và caching
-7. **REST API chuẩn** dễ tích hợp
-8. **Giao diện web responsive** thân thiện người dùng
+Qua quá trình nghiên cứu và phát triển, dự án **Hệ thống Chatbot hỏi đáp thông minh dựa trên truy xuất tài liệu (RAG)** đã hoàn thành các mục tiêu đề ra ban đầu. Hệ thống được xây dựng thành công với khả năng tiếp nhận, xử lý và truy xuất thông tin từ các tài liệu kỹ thuật chuyên ngành vi điều khiển và hệ thống nhúng. Quy trình hoạt động hoàn chỉnh từ khâu xử lý tài liệu đầu vào, nhúng vector ngữ nghĩa, truy xuất thông tin liên quan cho đến sinh câu trả lời tự động đã được triển khai đồng bộ và hiệu quả. Đặc biệt, hệ thống hỗ trợ song ngữ Việt-Anh với khả năng tự động nhận diện ngôn ngữ của người dùng, đáp ứng nhu cầu đa dạng trong môi trường học thuật và công nghiệp.
 
-### 12.2. Ưu điểm
+#### 12.1.2. Kiến trúc và công nghệ
 
-- **Chính xác cao:** Hybrid search kết hợp ưu điểm của cả semantic và keyword search
-- **Linh hoạt:** Hỗ trợ nhiều định dạng tài liệu
-- **Hiệu năng tốt:** Caching ở nhiều tầng
-- **Dễ mở rộng:** Kiến trúc module hóa
-- **Hỗ trợ tiếng Việt:** OCR và LLM đều hỗ trợ tiếng Việt
+Về mặt kiến trúc, hệ thống được thiết kế theo mô hình phân tách module, tạo điều kiện thuận lợi cho việc bảo trì, nâng cấp và mở rộng trong tương lai. Nền tảng công nghệ được lựa chọn kỹ lưỡng với các thành phần tiên tiến: mô hình nhúng văn bản BGE-M3 tạo vector 1024 chiều có khả năng biểu diễn ngữ nghĩa sâu, mô hình ngôn ngữ lớn Qwen2.5-7B đảm nhiệm việc sinh câu trả lời chất lượng cao, và mô hình thị giác Qwen2-VL hỗ trợ phân tích hình ảnh kỹ thuật như sơ đồ mạch điện và biểu đồ. Kỹ thuật tìm kiếm kết hợp với tỷ lệ 70% nhúng dày đặc và 30% nhúng thưa đã chứng minh hiệu quả vượt trội so với các phương pháp đơn lẻ, tận dụng được cả khả năng hiểu ngữ nghĩa lẫn độ chính xác từ khóa. Hệ thống bộ nhớ đệm đa tầng với Redis và bộ nhớ đệm LRU giúp tối ưu hóa thời gian phản hồi đáng kể.
 
-### 12.3. Hướng phát triển
+#### 12.1.3. Các tính năng nổi bật
 
-- Thêm authentication và authorization
-- Tối ưu hóa caching strategy
-- Hỗ trợ thêm định dạng file
-- Tích hợp streaming đầy đủ
-- Cải thiện UI/UX frontend
-- Thêm analytics và monitoring
+Hệ thống sở hữu nhiều tính năng nổi bật đáp ứng yêu cầu thực tiễn. Khả năng xử lý đa định dạng tài liệu bao gồm PDF, Word, văn bản thuần và hình ảnh giúp người dùng linh hoạt trong việc tải lên nguồn tài liệu. Thuật toán phân đoạn ngữ nghĩa thông minh bảo toàn cấu trúc tài liệu gốc, nhận diện chính xác các thành phần như tiêu đề, khối mã nguồn, bảng biểu và mô tả thanh ghi. Tính năng nhận dạng ký tự quang học (OCR) tích hợp PaddleOCR hỗ trợ tốt tiếng Việt có dấu, kết hợp với mô hình thị giác để mô tả các hình ảnh kỹ thuật phức tạp. Cơ chế phản hồi theo luồng thời gian thực mang lại trải nghiệm người dùng mượt mà, trong khi việc trích dẫn nguồn kèm điểm độ tin cậy giúp người dùng đánh giá và kiểm chứng thông tin. Giao diện web được thiết kế trực quan, thân thiện, phù hợp với nhiều đối tượng người dùng.
+
+#### 12.1.4. Điểm mạnh của hệ thống
+
+Điểm mạnh cốt lõi của hệ thống nằm ở khả năng tối ưu hóa cho tài liệu kỹ thuật chuyên ngành. Các thuật toán nhận diện được thiết kế đặc biệt để xử lý các thành phần đặc thù như mô tả thanh ghi, khối mã nguồn lập trình và bảng thông số kỹ thuật. Hiệu suất hoạt động được đảm bảo thông qua cơ chế lưu đệm thông minh và tính toán với độ chính xác nửa (FP16), giảm thiểu tài nguyên bộ nhớ mà vẫn duy trì chất lượng kết quả. Hệ thống xử lý lỗi toàn diện với cơ chế thử lại tự động đảm bảo độ ổn định trong môi trường sản xuất. Thiết kế mẫu đơn thể (singleton) cho các thành phần nặng như mô hình nhúng và kết nối cơ sở dữ liệu giúp tiết kiệm tài nguyên đáng kể. Kho lưu trữ vector ChromaDB với khả năng lưu trữ bền vững đảm bảo dữ liệu được bảo toàn qua các phiên làm việc.
+
+#### 12.1.5. Những hạn chế còn tồn tại
+
+Bên cạnh những thành tựu đạt được, hệ thống vẫn còn một số hạn chế cần được khắc phục. Hiện tại, hệ thống chưa tích hợp bộ nhớ hội thoại, mỗi câu hỏi được xử lý độc lập mà không ghi nhớ ngữ cảnh các lượt trò chuyện trước đó. Chỉ mục thưa phục vụ tìm kiếm từ khóa chỉ được lưu trong bộ nhớ tạm, dẫn đến việc phải xây dựng lại khi khởi động hệ thống. Khả năng triển khai hiện giới hạn ở mô hình đơn máy chủ, chưa hỗ trợ mở rộng ngang để đáp ứng lượng truy cập lớn. Cơ chế xếp hạng lại kết quả truy xuất và vòng phản hồi từ người dùng để cải thiện chất lượng theo thời gian cũng chưa được triển khai.
+
+### 12.2. Hướng phát triển
+
+#### 12.2.1. Giai đoạn ngắn hạn
+
+Trong giai đoạn ngắn hạn, ưu tiên hàng đầu là bổ sung bộ nhớ hội thoại đa lượt, cho phép hệ thống ghi nhớ ngữ cảnh trò chuyện và hiểu các câu hỏi tiếp nối như "Giải thích thêm về điểm đó" hay "Còn trường hợp khác không?". Chỉ mục thưa cần được lưu trữ vào cơ sở dữ liệu bền vững Redis để tránh mất mát khi khởi động lại. Tính năng phân trang kết quả truy vấn sẽ được triển khai để xử lý hiệu quả khi có nhiều tài liệu liên quan. Hệ thống nhãn và phân loại tài liệu giúp người dùng tổ chức và tìm kiếm tài liệu dễ dàng hơn. Cuối cùng, bảng điều khiển quản trị sẽ được xây dựng để giám sát hoạt động hệ thống, theo dõi các chỉ số hiệu suất và quản lý người dùng.
+
+#### 12.2.2. Giai đoạn trung hạn
+
+Giai đoạn trung hạn tập trung vào nâng cao chất lượng và khả năng mở rộng. Cơ chế xếp hạng lại (re-ranking) sử dụng mô hình cross-encoder sẽ được triển khai để nâng cao độ chính xác của kết quả truy xuất, đặc biệt với các truy vấn phức tạp. Kiến trúc đa máy chủ với bộ nhớ đệm chia sẻ qua Redis Cluster cho phép hệ thống phục vụ lượng người dùng lớn hơn. Việc tinh chỉnh mô hình nhúng trên tập dữ liệu chuyên ngành vi điều khiển sẽ cải thiện đáng kể khả năng hiểu ngữ nghĩa đặc thù. Hệ thống quản lý phiên bản tài liệu giúp theo dõi các thay đổi và cho phép so sánh giữa các phiên bản. Vòng phản hồi từ người dùng thông qua đánh giá câu trả lời (hữu ích/không hữu ích) sẽ được tích hợp để cải thiện chất lượng liên tục.
+
+#### 12.2.3. Giai đoạn dài hạn
+
+Về dài hạn, hệ thống hướng tới khả năng xử lý quy mô lớn và tích hợp các công nghệ tiên tiến. Việc chuyển đổi sang kho vector phân tán như Qdrant hoặc Milvus sẽ cho phép lưu trữ và truy vấn hàng triệu tài liệu với độ trễ thấp. Tích hợp đồ thị tri thức (Knowledge Graph) mở ra khả năng suy luận liên kết giữa các khái niệm, ví dụ hiểu được mối quan hệ giữa các giao thức truyền thông hay sự tương thích giữa các dòng vi điều khiển. Cơ chế học chủ động (Active Learning) sẽ được triển khai để tự động nhận diện và học hỏi từ các truy vấn khó mà hệ thống chưa trả lời tốt. Khả năng tự động chọn mô hình phù hợp theo ngữ cảnh câu hỏi giúp tối ưu hóa cả chất lượng lẫn chi phí tính toán. Cuối cùng, tính năng cập nhật và đánh chỉ mục tài liệu theo thời gian thực sẽ đảm bảo hệ thống luôn phản ánh thông tin mới nhất.
+
+#### 12.2.4. Mở rộng phạm vi ứng dụng
+
+Ngoài lĩnh vực hệ thống nhúng và vi điều khiển, kiến trúc và công nghệ của hệ thống hoàn toàn có thể được mở rộng sang các lĩnh vực tài liệu kỹ thuật khác như y tế, pháp luật, tài chính hay giáo dục. Việc tích hợp vào các nền tảng quản lý tri thức doanh nghiệp sẽ mang lại giá trị thiết thực trong việc khai thác kho tài liệu nội bộ. Phát triển giao diện lập trình ứng dụng (API) công khai cho phép các bên thứ ba tích hợp và xây dựng các ứng dụng phái sinh. Ứng dụng di động sẽ được phát triển để người dùng có thể truy cập và tra cứu tài liệu mọi lúc mọi nơi, đặc biệt hữu ích cho các kỹ sư làm việc tại hiện trường.
+
+### 12.3. Lời kết
+
+Dự án **Hệ thống RAG Chatbot cho tài liệu lập trình nhúng** đã đạt được những kết quả đáng khích lệ, chứng minh tính khả thi và hiệu quả của việc ứng dụng công nghệ trí tuệ nhân tạo vào lĩnh vực tra cứu tài liệu kỹ thuật. Với nền tảng kiến trúc vững chắc và lộ trình phát triển rõ ràng, hệ thống có tiềm năng trở thành công cụ hỗ trợ đắc lực cho các kỹ sư, sinh viên và nhà nghiên cứu trong lĩnh vực hệ thống nhúng nói riêng và các ngành kỹ thuật nói chung. Sự kết hợp giữa khả năng hiểu ngữ nghĩa sâu của mô hình ngôn ngữ lớn với độ chính xác của tìm kiếm từ khóa thông qua kỹ thuật tìm kiếm kết hợp đã tạo nên một giải pháp toàn diện, đáp ứng được các yêu cầu khắt khe của tài liệu kỹ thuật chuyên ngành.
 
 ---
 
