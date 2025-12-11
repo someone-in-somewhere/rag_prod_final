@@ -21,11 +21,8 @@ class OCREngine:
     def _init_ocr(self):
         print("Initializing PaddleOCR...")
         try:
-            # PaddleOCR 3.x API đơn giản hơn
-            self.reader = PaddleOCR(
-                use_angle_cls=True,  # Detect rotated text
-                lang='vi'  # Vietnamese (includes English)
-            )
+            # PaddleOCR 3.x: chỉ cần lang, các parameter khác đã deprecated
+            self.reader = PaddleOCR(lang='vi')
             print("PaddleOCR ready")
         except Exception as e:
             print(f"PaddleOCR init error: {e}")
@@ -38,17 +35,29 @@ class OCREngine:
                 print("OCR reader not initialized")
                 return ""
 
-            # PaddleOCR 3.x: không cần parameter cls
-            result = self.reader.ocr(image_path)
-            if not result or not result[0]:
+            # PaddleOCR 3.x: sử dụng predict() thay vì ocr()
+            result = self.reader.predict(image_path)
+            if not result:
                 return ""
 
             lines = []
-            for line in result[0]:
-                text = line[1][0]  # text content
-                conf = line[1][1]  # confidence
-                if conf > 0.5:
-                    lines.append(text)
+            # PaddleOCR 3.x trả về list of dicts hoặc list of lists
+            for item in result:
+                if isinstance(item, dict):
+                    # Format mới: {'rec_texts': [...], 'rec_scores': [...]}
+                    texts = item.get('rec_texts', [])
+                    scores = item.get('rec_scores', [])
+                    for text, score in zip(texts, scores):
+                        if score > 0.5:
+                            lines.append(text)
+                elif isinstance(item, list):
+                    # Format cũ: [[box, (text, conf)], ...]
+                    for line in item:
+                        if len(line) >= 2 and isinstance(line[1], tuple):
+                            text = line[1][0]
+                            conf = line[1][1]
+                            if conf > 0.5:
+                                lines.append(text)
 
             return "\n".join(lines)
         except Exception as e:
