@@ -38,7 +38,8 @@ class OCREngine:
                 print("OCR reader not initialized")
                 return ""
 
-            result = self.reader.ocr(image_path, cls=True)
+            # PaddleOCR 3.x: không cần parameter cls
+            result = self.reader.ocr(image_path)
             if not result or not result[0]:
                 return ""
 
