@@ -235,7 +235,7 @@ def format_table(table_data: List[List]) -> str:
 
 
 def parse_pdf(filepath: str, max_pages: int = MAX_PDF_PAGES) -> Dict:
-    """Parse PDF: text + tables"""
+    """Parse PDF: text + tables + images"""
     start_time = time.time()
     file_size_mb = check_file_limits(filepath)
 
@@ -250,6 +250,13 @@ def parse_pdf(filepath: str, max_pages: int = MAX_PDF_PAGES) -> Dict:
 
     all_text = []
     tables_text = []
+    image_count = 0
+
+    # Count images first
+    for page in doc:
+        image_count += len(page.get_images())
+
+    log_ingest(f"Tìm thấy: {page_count} trang, {image_count} ảnh")
 
     for page_num, page in enumerate(doc):
         # Extract text
@@ -268,23 +275,100 @@ def parse_pdf(filepath: str, max_pages: int = MAX_PDF_PAGES) -> Dict:
         except Exception as e:
             print(f"Warning: Could not extract tables from page {page_num + 1}: {e}")
 
+    # Extract images
+    images_text = []
+    if image_count > 0:
+        log_ingest(f"Đang xử lý {image_count} ảnh (OCR + Vision)...")
+        image_start = time.time()
+        images_text = extract_images_from_pdf(doc, filepath)
+        image_elapsed = time.time() - image_start
+        log_ingest(f"Xử lý ảnh hoàn tất: {len(images_text)}/{image_count} ảnh - {image_elapsed:.2f}s")
+
     doc.close()
 
     combined = "\n\n".join(all_text)
     if tables_text:
         combined += "\n\n[TABLES]\n" + "\n\n".join(tables_text)
+    if images_text:
+        combined += "\n\n[IMAGES]\n" + "\n\n".join(images_text)
 
     elapsed = time.time() - start_time
-    log_ingest(f"PDF parsed: {page_count} trang, {len(tables_text)} bảng - {elapsed:.2f}s")
+    log_ingest(f"PDF parsed: {page_count} trang, {len(tables_text)} bảng, {len(images_text)} ảnh - {elapsed:.2f}s")
 
     return {
         "text": combined,
         "page_count": page_count,
         "table_count": len(tables_text),
+        "image_count": len(images_text),
         "file_size_mb": file_size_mb,
         "has_tables": len(tables_text) > 0,
+        "has_images": len(images_text) > 0,
         "parse_time_s": elapsed
     }
+
+
+def extract_images_from_pdf(doc, filepath: str) -> List[str]:
+    """Extract và xử lý images từ PDF file"""
+    from ocr_utils import process_image
+
+    images_text = []
+    temp_dir = tempfile.mkdtemp()
+    processed_xrefs = set()  # Tránh xử lý ảnh trùng
+
+    try:
+        img_idx = 0
+        for page_num, page in enumerate(doc):
+            image_list = page.get_images()
+
+            for img in image_list:
+                xref = img[0]
+
+                # Skip nếu đã xử lý ảnh này (ảnh có thể xuất hiện nhiều trang)
+                if xref in processed_xrefs:
+                    continue
+                processed_xrefs.add(xref)
+
+                try:
+                    # Extract image
+                    base_image = doc.extract_image(xref)
+                    image_data = base_image["image"]
+                    image_ext = base_image["ext"]
+
+                    # Check image size
+                    image_size_mb = len(image_data) / (1024 * 1024)
+                    if image_size_mb > MAX_IMAGE_SIZE_MB:
+                        print(f"Skipping image {img_idx}: too large ({image_size_mb:.1f}MB)")
+                        continue
+
+                    # Skip very small images (likely icons/bullets)
+                    if len(image_data) < 5000:  # < 5KB
+                        continue
+
+                    # Save temp image file
+                    temp_image_path = os.path.join(temp_dir, f"image_{img_idx}.{image_ext}")
+                    with open(temp_image_path, "wb") as f:
+                        f.write(image_data)
+
+                    # Process image with OCR and Vision
+                    result = process_image(temp_image_path)
+
+                    if result["combined"] and "[No content extracted" not in result["combined"]:
+                        images_text.append(f"[Page {page_num + 1} - Image {img_idx + 1}]\n{result['combined']}")
+                        img_idx += 1
+
+                except Exception as e:
+                    print(f"Error processing image {img_idx} in PDF: {e}")
+                    continue
+
+    finally:
+        # Cleanup temp files
+        import shutil
+        try:
+            shutil.rmtree(temp_dir)
+        except Exception as e:
+            print(f"Warning: Could not cleanup temp dir: {e}")
+
+    return images_text
 
 
 def count_docx_pages(filepath: str) -> int:
