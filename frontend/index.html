@@ -141,6 +141,13 @@
         }
         .input-area button:hover { background: #1d4ed8; }
         .input-area button:disabled { background: #cccccc; cursor: not-allowed; }
+        .input-area .btn-clear {
+            padding: 14px 16px;
+            background: #f5f5f5;
+            border: 1px solid #d0d0d0;
+            color: #666666;
+        }
+        .input-area .btn-clear:hover { background: #e8e8e8; }
         
         /* Documents Panel */
         .upload-area {
@@ -317,6 +324,7 @@
                 <div class="input-area">
                     <input type="text" id="query-input" placeholder="Hỏi về lập trình nhúng... (VD: Giải thích giao thức I2C)" onkeypress="if(event.key==='Enter') sendMessage()">
                     <button onclick="sendMessage()" id="send-btn">Gửi</button>
+                    <button onclick="clearMessages()" class="btn-clear" title="Xóa tin nhắn">🗑️</button>
                 </div>
             </div>
         </div>
@@ -355,6 +363,15 @@
     <script>
         const API_BASE = '';
         let documents = [];
+
+        function clearMessages() {
+            const messages = document.getElementById('messages');
+            messages.innerHTML = `
+                <div class="message assistant">
+                    <strong>Assistant:</strong> Xin chào! Tôi là trợ lý chuyên về lập trình nhúng. Hãy hỏi tôi về vi điều khiển, giao thức I2C/SPI/UART, thanh ghi, hoặc bất kỳ vấn đề embedded nào!
+                </div>
+            `;
+        }
 
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
