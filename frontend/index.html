@@ -236,6 +236,58 @@
             font-size: 1em;
             font-weight: 500;
         }
+
+        /* Progress Bar */
+        .progress-container {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+        }
+        .progress-container.active { display: block; }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .progress-title {
+            font-weight: 500;
+            color: #0369a1;
+            font-size: 0.9em;
+        }
+        .progress-percent {
+            font-weight: 600;
+            color: #0369a1;
+            font-size: 0.9em;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0f2fe;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0ea5e9, #2563eb);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .progress-status {
+            margin-top: 8px;
+            font-size: 0.85em;
+            color: #64748b;
+        }
+        .progress-status.error {
+            color: #dc2626;
+        }
+        .progress-status.success {
+            color: #16a34a;
+        }
     </style>
 </head>
 <body>
@@ -274,10 +326,20 @@
             <div class="upload-area" id="upload-area" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
                 <p style="margin-bottom: 16px;">Kéo thả file hoặc click để upload</p>
                 <p style="margin-bottom: 16px; font-size: 0.9em; color: #888;">Hỗ trợ: PDF, DOCX, TXT, JPG, PNG (tối đa 50MB, 100 trang)</p>
-                <label class="upload-btn">
+                <label class="upload-btn" id="upload-btn-label">
                     Chọn File
                     <input type="file" id="file-input" accept=".pdf,.docx,.txt,.jpg,.jpeg,.png" onchange="uploadFile(this.files[0])">
                 </label>
+                <div class="progress-container" id="progress-container">
+                    <div class="progress-header">
+                        <span class="progress-title" id="progress-title">Đang xử lý...</span>
+                        <span class="progress-percent" id="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="progress-status" id="progress-status">Đang chuẩn bị...</div>
+                </div>
             </div>
             <h3 class="section-title">📚 Tài liệu đã upload</h3>
             <div class="doc-list" id="doc-list">
@@ -387,36 +449,98 @@
             return icons[type] || '📄';
         }
 
+        // Progress bar functions
+        function showProgress() {
+            document.getElementById('progress-container').classList.add('active');
+            document.getElementById('upload-btn-label').style.display = 'none';
+        }
+
+        function hideProgress() {
+            document.getElementById('progress-container').classList.remove('active');
+            document.getElementById('upload-btn-label').style.display = 'inline-block';
+            document.getElementById('file-input').value = '';
+        }
+
+        function updateProgress(percent, title, status, statusClass = '') {
+            document.getElementById('progress-fill').style.width = percent + '%';
+            document.getElementById('progress-percent').textContent = percent + '%';
+            document.getElementById('progress-title').textContent = title;
+            const statusEl = document.getElementById('progress-status');
+            statusEl.textContent = status;
+            statusEl.className = 'progress-status ' + statusClass;
+        }
+
         async function uploadFile(file) {
             if (!file) return;
+
+            showProgress();
+            updateProgress(5, `📄 ${file.name}`, 'Đang tải file lên server...');
+
             const formData = new FormData();
             formData.append('file', file);
 
             try {
+                // Step 1: Upload file (0-30%)
+                updateProgress(10, `📄 ${file.name}`, 'Đang upload file...');
+
                 const uploadRes = await fetch(`${API_BASE}/upload`, { method: 'POST', body: formData });
                 const uploadData = await uploadRes.json();
-                
+
                 if (!uploadRes.ok) {
-                    alert(uploadData.detail);
+                    updateProgress(0, '❌ Lỗi', uploadData.detail || 'Upload thất bại', 'error');
+                    setTimeout(hideProgress, 3000);
                     return;
                 }
-                
+
+                updateProgress(30, `📄 ${file.name}`, '✓ Upload hoàn tất. Đang xử lý tài liệu...');
+
+                // Step 2: Start ingest with progress simulation
+                updateProgress(35, `📄 ${file.name}`, 'Đang phân tích cấu trúc tài liệu...');
+
+                // Simulate progress during ingest
+                let currentProgress = 35;
+                const progressInterval = setInterval(() => {
+                    if (currentProgress < 85) {
+                        currentProgress += Math.random() * 5;
+                        const messages = [
+                            'Đang trích xuất văn bản...',
+                            'Đang phân tích nội dung...',
+                            'Đang tạo chunks...',
+                            'Đang tạo embeddings...',
+                            'Đang lưu vào vector database...'
+                        ];
+                        const msgIndex = Math.min(Math.floor((currentProgress - 35) / 10), messages.length - 1);
+                        updateProgress(Math.floor(currentProgress), `📄 ${file.name}`, messages[msgIndex]);
+                    }
+                }, 500);
+
                 const ingestRes = await fetch(`${API_BASE}/ingest`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ filename: uploadData.filename })
                 });
+
+                clearInterval(progressInterval);
+
                 const ingestData = await ingestRes.json();
-                
+
                 if (!ingestRes.ok) {
-                    alert(ingestData.detail);
+                    updateProgress(0, '❌ Lỗi', ingestData.detail || 'Xử lý thất bại', 'error');
+                    setTimeout(hideProgress, 3000);
                     return;
                 }
-                
-                alert('Upload thành công! ' + ingestData.chunk_count + ' chunks đã được tạo.');
-                loadDocuments();
+
+                // Step 3: Complete (100%)
+                updateProgress(100, '✅ Hoàn tất!', `Đã tạo ${ingestData.chunk_count} chunks thành công!`, 'success');
+
+                setTimeout(() => {
+                    hideProgress();
+                    loadDocuments();
+                }, 2000);
+
             } catch (err) {
-                alert('Lỗi kết nối: ' + err.message);
+                updateProgress(0, '❌ Lỗi kết nối', err.message, 'error');
+                setTimeout(hideProgress, 3000);
             }
         }
 
