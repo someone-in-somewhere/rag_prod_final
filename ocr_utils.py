@@ -155,12 +155,16 @@ class VisionCaptioner:
                 output_ids = self._model.generate(
                     **inputs, max_new_tokens=256, do_sample=False
                 )
-            
+
             output_ids = output_ids[:, inputs.input_ids.shape[1]:]
             caption = self._processor.batch_decode(
                 output_ids, skip_special_tokens=True
             )[0]
-            
+
+            # Giải phóng memory sau mỗi caption để tránh fragmentation
+            del inputs, output_ids
+            torch.cuda.empty_cache()
+
             return caption
         except Exception as e:
             print(f"Vision error: {e}")
