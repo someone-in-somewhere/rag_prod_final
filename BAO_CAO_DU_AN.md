@@ -943,14 +943,93 @@ Dự án **Hệ thống RAG Chatbot cho tài liệu lập trình nhúng** đã �
 | LLM | Large Language Model - Model ngôn ngữ lớn |
 | OCR | Optical Character Recognition - Nhận dạng ký tự quang học |
 
-### B. References
+### B. Tài liệu tham khảo
 
-- FastAPI Documentation: https://fastapi.tiangolo.com/
-- ChromaDB Documentation: https://docs.trychroma.com/
-- BGE-M3 Model: https://huggingface.co/BAAI/bge-m3
-- PaddleOCR: https://github.com/PaddlePaddle/PaddleOCR
-- vLLM: https://github.com/vllm-project/vllm
+#### 1. Nghiên cứu về RAG (Retrieval-Augmented Generation)
+
+| Tài liệu | Mô tả | Link |
+|----------|-------|------|
+| RAG Survey Paper | Khảo sát toàn diện về RAG cho LLM | https://arxiv.org/abs/2312.10997 |
+| RAG Evolution Survey | Tiến hóa và hướng phát triển của RAG (2024) | https://arxiv.org/abs/2410.12837 |
+| RAG Best Practices | Các thực hành tốt nhất cho RAG | https://arxiv.org/abs/2407.01219 |
+| Prompt Engineering Guide - RAG | Hướng dẫn RAG cho LLM | https://www.promptingguide.ai/research/rag |
+
+#### 2. Mô hình ngôn ngữ lớn (LLM)
+
+| Công nghệ | Mô tả | Link |
+|-----------|-------|------|
+| Qwen2.5-7B-Instruct | Mô hình ngôn ngữ 7B tham số | https://huggingface.co/Qwen/Qwen2.5-7B-Instruct |
+| Qwen2-VL-7B-Instruct | Mô hình thị giác-ngôn ngữ | https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct |
+| Qwen Blog - Qwen2-VL | Giới thiệu mô hình Qwen2-VL | https://qwenlm.github.io/blog/qwen2-vl/ |
+| vLLM Documentation | Tài liệu vLLM inference engine | https://docs.vllm.ai/ |
+| vLLM GitHub | Mã nguồn vLLM | https://github.com/vllm-project/vllm |
+
+#### 3. Mô hình nhúng văn bản (Embedding)
+
+| Công nghệ | Mô tả | Link |
+|-----------|-------|------|
+| BGE-M3 Model | Mô hình nhúng đa ngôn ngữ, đa chức năng | https://huggingface.co/BAAI/bge-m3 |
+| FlagEmbedding | Thư viện embedding của BAAI | https://github.com/FlagOpen/FlagEmbedding |
+| BGE Reranker v2-M3 | Mô hình xếp hạng lại | https://huggingface.co/BAAI/bge-reranker-v2-m3 |
+
+#### 4. Cơ sở dữ liệu vector
+
+| Công nghệ | Mô tả | Link |
+|-----------|-------|------|
+| ChromaDB Documentation | Tài liệu ChromaDB | https://docs.trychroma.com/ |
+| ChromaDB GitHub | Mã nguồn ChromaDB | https://github.com/chroma-core/chroma |
+| ChromaDB Website | Trang chủ ChromaDB | https://www.trychroma.com/ |
+
+#### 5. Xử lý tài liệu
+
+| Công nghệ | Mô tả | Link |
+|-----------|-------|------|
+| PyMuPDF Documentation | Thư viện xử lý PDF | https://pymupdf.readthedocs.io/ |
+| PyMuPDF GitHub | Mã nguồn PyMuPDF | https://github.com/pymupdf/PyMuPDF |
+| python-docx Documentation | Thư viện xử lý Word | https://python-docx.readthedocs.io/ |
+| python-docx GitHub | Mã nguồn python-docx | https://github.com/python-openxml/python-docx |
+
+#### 6. OCR và Xử lý hình ảnh
+
+| Công nghệ | Mô tả | Link |
+|-----------|-------|------|
+| PaddleOCR GitHub | Mã nguồn PaddleOCR | https://github.com/PaddlePaddle/PaddleOCR |
+| PaddleOCR Documentation | Tài liệu PaddleOCR | https://paddlepaddle.github.io/PaddleOCR/main/en/quick_start.html |
+
+#### 7. Framework Web và API
+
+| Công nghệ | Mô tả | Link |
+|-----------|-------|------|
+| FastAPI Documentation | Tài liệu FastAPI | https://fastapi.tiangolo.com/ |
+| FastAPI GitHub | Mã nguồn FastAPI | https://github.com/fastapi/fastapi |
+| Uvicorn Documentation | Tài liệu ASGI server | https://uvicorn.dev/ |
+| Pydantic Documentation | Thư viện validation dữ liệu | https://docs.pydantic.dev/latest/ |
+| Pydantic GitHub | Mã nguồn Pydantic | https://github.com/pydantic/pydantic |
+
+#### 8. Cơ sở dữ liệu và Cache
+
+| Công nghệ | Mô tả | Link |
+|-----------|-------|------|
+| Redis Documentation | Tài liệu Redis | https://redis.io/docs/latest/ |
+| Redis GitHub | Mã nguồn Redis | https://github.com/redis/redis |
+| Redis Python Client | Thư viện Redis cho Python | https://pypi.org/project/redis/ |
+
+#### 9. Machine Learning Framework
+
+| Công nghệ | Mô tả | Link |
+|-----------|-------|------|
+| PyTorch Documentation | Tài liệu PyTorch | https://docs.pytorch.org/docs/stable/index.html |
+| PyTorch GitHub | Mã nguồn PyTorch | https://github.com/pytorch/pytorch |
+| Hugging Face Transformers | Thư viện Transformers | https://huggingface.co/docs/transformers/index |
+| Transformers GitHub | Mã nguồn Transformers | https://github.com/huggingface/transformers |
+
+#### 10. Tài liệu bổ sung
+
+| Tài liệu | Mô tả | Link |
+|----------|-------|------|
+| LangChain BGE Integration | Tích hợp BGE với LangChain | https://docs.langchain.com/oss/python/integrations/text_embedding/bge_huggingface |
+| RAGFlow Blog | Tổng kết RAG năm 2024 | https://ragflow.io/blog/the-rise-and-evolution-of-rag-in-2024-a-year-in-review |
 
 ---
 
-*Báo cáo được tạo tự động từ phân tích mã nguồn dự án.*
+*Báo cáo được cập nhật ngày 11/12/2024.*
