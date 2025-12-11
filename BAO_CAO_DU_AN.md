@@ -945,41 +945,55 @@ Dự án **Hệ thống RAG Chatbot cho tài liệu lập trình nhúng** đã �
 
 ### B. Tài liệu tham khảo
 
+**Tiếng Việt**
+
+[1] Lê Thanh Hương, *Bài giảng Xử lý ngôn ngữ tự nhiên*, Viện Công nghệ thông tin và Truyền thông, Trường Đại học Bách khoa Hà Nội, 2020. Truy cập: https://users.soict.hust.edu.vn/huonglt/UNLP/
+
+[2] Nguyễn Đắc Hiếu, *Xây dựng ứng dụng Chatbot tư vấn khách hàng sử dụng các kỹ thuật học sâu*, Luận văn Thạc sĩ, Viện Công nghệ thông tin và Truyền thông, Trường Đại học Bách khoa Hà Nội, 2021.
+
+[3] Nguyễn Tất Tiến, *Nghiên cứu và xây dựng chatbot hỗ trợ người dùng trong ngân hàng*, Luận văn Thạc sĩ Kỹ thuật phần mềm, Trường Đại học Công nghệ, Đại học Quốc gia Hà Nội, 2019.
+
+[4] Đinh Mạnh Tường, *Trí tuệ nhân tạo: Cách tiếp cận hiện đại*, Nhà xuất bản Khoa học và Kỹ thuật, Hà Nội, 2024, tr. 1-523.
+
+[5] Vũ Hữu Tiệp, *Machine Learning cơ bản*, 2018. Truy cập: https://machinelearningcoban.com/
+
 **Tiếng Anh**
 
-[1] J. Chen, S. Xiao, P. Zhang, K. Luo, D. Lian, and Z. Liu, "BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation", *arXiv preprint*, arXiv:2402.03216, 2024. Truy cập: https://arxiv.org/abs/2402.03216
+[6] J. Chen, S. Xiao, P. Zhang, K. Luo, D. Lian, and Z. Liu, "BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation", *arXiv preprint*, arXiv:2402.03216, 2024. Truy cập: https://arxiv.org/abs/2402.03216
 
-[2] Chroma Team, *ChromaDB: The AI-native open-source embedding database*, 2024. Truy cập: https://docs.trychroma.com/
+[7] Chroma Team, *ChromaDB: The AI-native open-source embedding database*, 2024. Truy cập: https://docs.trychroma.com/
 
-[3] Y. Gao, Y. Xiong, X. Gao, K. Jia, J. Pan, Y. Bi, Y. Dai, J. Sun, M. Wang, and H. Wang, "Retrieval-Augmented Generation for Large Language Models: A Survey", *arXiv preprint*, arXiv:2312.10997v5, 2024. Truy cập: https://arxiv.org/abs/2312.10997
+[8] Y. Gao, Y. Xiong, X. Gao, K. Jia, J. Pan, Y. Bi, Y. Dai, J. Sun, M. Wang, and H. Wang, "Retrieval-Augmented Generation for Large Language Models: A Survey", *arXiv preprint*, arXiv:2312.10997v5, 2024. Truy cập: https://arxiv.org/abs/2312.10997
 
-[4] S. Gupta, R. Ranjan, and S. N. Singh, "A Comprehensive Survey of Retrieval-Augmented Generation (RAG): Evolution, Current Landscape and Future Directions", *arXiv preprint*, arXiv:2410.12837, 2024. Truy cập: https://arxiv.org/abs/2410.12837
+[9] S. Gupta, R. Ranjan, and S. N. Singh, "A Comprehensive Survey of Retrieval-Augmented Generation (RAG): Evolution, Current Landscape and Future Directions", *arXiv preprint*, arXiv:2410.12837, 2024. Truy cập: https://arxiv.org/abs/2410.12837
 
-[5] Hugging Face, *Transformers: State-of-the-art Machine Learning for PyTorch, TensorFlow, and JAX*, 2024. Truy cập: https://huggingface.co/docs/transformers/index
+[10] Hugging Face, *Transformers: State-of-the-art Machine Learning for PyTorch, TensorFlow, and JAX*, 2024. Truy cập: https://huggingface.co/docs/transformers/index
 
-[6] PaddlePaddle Team, *PaddleOCR: Awesome multilingual OCR toolkits based on PaddlePaddle*, 2024. Truy cập: https://github.com/PaddlePaddle/PaddleOCR
+[11] D. Jurafsky and J. H. Martin, *Speech and Language Processing*, 3rd ed. (draft), 2024. Truy cập: https://web.stanford.edu/~jurafsky/slp3/
 
-[7] Pydantic Team, *Pydantic: Data validation using Python type hints*, Version 2.12, 2024. Truy cập: https://docs.pydantic.dev/latest/
+[12] PaddlePaddle Team, *PaddleOCR: Awesome multilingual OCR toolkits based on PaddlePaddle*, 2024. Truy cập: https://github.com/PaddlePaddle/PaddleOCR
 
-[8] PyMuPDF/Artifex Software, *PyMuPDF Documentation*, Version 1.25, 2024. Truy cập: https://pymupdf.readthedocs.io/
+[13] Pydantic Team, *Pydantic: Data validation using Python type hints*, Version 2.12, 2024. Truy cập: https://docs.pydantic.dev/latest/
 
-[9] PyTorch Team, *PyTorch Documentation*, Version 2.4, 2024. Truy cập: https://docs.pytorch.org/docs/stable/index.html
+[14] PyMuPDF/Artifex Software, *PyMuPDF Documentation*, Version 1.25, 2024. Truy cập: https://pymupdf.readthedocs.io/
 
-[10] python-openxml, *python-docx: Create and modify Word documents with Python*, Version 1.1, 2024. Truy cập: https://python-docx.readthedocs.io/
+[15] PyTorch Team, *PyTorch Documentation*, Version 2.4, 2024. Truy cập: https://docs.pytorch.org/docs/stable/index.html
 
-[11] Qwen Team, Alibaba Group, "Qwen2.5 Technical Report", *arXiv preprint*, arXiv:2412.15115, 2024. Truy cập: https://arxiv.org/abs/2412.15115
+[16] python-openxml, *python-docx: Create and modify Word documents with Python*, Version 1.1, 2024. Truy cập: https://python-docx.readthedocs.io/
 
-[12] Qwen Team, Alibaba Group, "Qwen2-VL: To See the World More Clearly", *Qwen Blog*, 2024. Truy cập: https://qwenlm.github.io/blog/qwen2-vl/
+[17] Qwen Team, Alibaba Group, "Qwen2.5 Technical Report", *arXiv preprint*, arXiv:2412.15115, 2024. Truy cập: https://arxiv.org/abs/2412.15115
 
-[13] S. Ramírez, *FastAPI: Modern, fast web framework for building APIs with Python*, Version 0.115, 2024. Truy cập: https://fastapi.tiangolo.com/
+[18] Qwen Team, Alibaba Group, "Qwen2-VL: To See the World More Clearly", *Qwen Blog*, 2024. Truy cập: https://qwenlm.github.io/blog/qwen2-vl/
 
-[14] Redis Ltd., *Redis Documentation*, Version 7.4, 2024. Truy cập: https://redis.io/docs/latest/
+[19] S. Ramírez, *FastAPI: Modern, fast web framework for building APIs with Python*, Version 0.115, 2024. Truy cập: https://fastapi.tiangolo.com/
 
-[15] T. Dettmers et al., *Uvicorn: An ASGI web server for Python*, 2024. Truy cập: https://uvicorn.dev/
+[20] Redis Ltd., *Redis Documentation*, Version 7.4, 2024. Truy cập: https://redis.io/docs/latest/
 
-[16] vLLM Team, UC Berkeley, *vLLM: A high-throughput and memory-efficient inference and serving engine for LLMs*, 2024. Truy cập: https://docs.vllm.ai/
+[21] T. Dettmers et al., *Uvicorn: An ASGI web server for Python*, 2024. Truy cập: https://uvicorn.dev/
 
-[17] X. Wang, Z. Wang, X. Gao, F. Zhang, Y. Wu, Z. Xu, T. Shi, Z. Wang, S. Li, Q. Qian, R. Yin, C. Lv, X. Zheng, and X. Huang, "Searching for Best Practices in Retrieval-Augmented Generation", *arXiv preprint*, arXiv:2407.01219, 2024. Truy cập: https://arxiv.org/abs/2407.01219
+[22] vLLM Team, UC Berkeley, *vLLM: A high-throughput and memory-efficient inference and serving engine for LLMs*, 2024. Truy cập: https://docs.vllm.ai/
+
+[23] X. Wang, Z. Wang, X. Gao, F. Zhang, Y. Wu, Z. Xu, T. Shi, Z. Wang, S. Li, Q. Qian, R. Yin, C. Lv, X. Zheng, and X. Huang, "Searching for Best Practices in Retrieval-Augmented Generation", *arXiv preprint*, arXiv:2407.01219, 2024. Truy cập: https://arxiv.org/abs/2407.01219
 
 ---
 
