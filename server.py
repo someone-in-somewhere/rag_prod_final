@@ -197,31 +197,42 @@ async def ingest(request: IngestRequest):
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
     """Chat endpoint"""
-    logger.info(f"Query: {request.query[:100]}... (hybrid={request.use_hybrid})")
-    
+    query_preview = request.query[:80] + "..." if len(request.query) > 80 else request.query
+    logger.info(f"💬 Query: {query_preview}")
+
     if request.stream:
         return StreamingResponse(
             chat_stream(
-                request.query, 
-                request.top_k, 
+                request.query,
+                request.top_k,
                 request.max_tokens,
                 use_hybrid=request.use_hybrid
             ),
             media_type="text/plain"
         )
-    
+
     result = chat(
-        request.query, 
-        request.top_k, 
+        request.query,
+        request.top_k,
         request.max_tokens,
         use_hybrid=request.use_hybrid
     )
-    
+
+    # Log chi tiết thời gian
+    info = result.get('retrieval_info', {})
+    retrieve_ms = info.get('retrieve_time_ms', 0)
+    generate_ms = info.get('generate_time_ms', 0)
+    total_ms = info.get('total_time_ms', 0)
+    docs_found = info.get('docs_found', 0)
+    context_used = result.get('context_used', False)
+
     logger.info(
-        f"Response generated: {result['retrieval_info'].get('total_time_ms', 0)}ms, "
-        f"sources={len(result['sources'])}"
+        f"✅ Response: {total_ms}ms total "
+        f"(retrieval: {retrieve_ms}ms, generation: {generate_ms}ms) | "
+        f"sources: {len(result['sources'])}/{docs_found} | "
+        f"context: {'yes' if context_used else 'no'}"
     )
-    
+
     return ChatResponse(**result)
 
 

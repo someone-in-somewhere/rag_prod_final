@@ -10,8 +10,15 @@ import os
 import re
 import tempfile
 import uuid
+import time
 from datetime import datetime
 from config import CHUNK_SIZE, CHUNK_OVERLAP, UPLOAD_DIR, MAX_FILE_SIZE_MB, MAX_PDF_PAGES, MAX_IMAGE_SIZE_MB
+
+
+def log_ingest(message: str):
+    """Log với timestamp cho document ingestion"""
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"[{timestamp}] 📄 {message}")
 
 # Patterns để detect boundaries
 CODE_BLOCK_PATTERN = re.compile(r'```[\s\S]*?```|`[^`]+`')
@@ -229,26 +236,27 @@ def format_table(table_data: List[List]) -> str:
 
 def parse_pdf(filepath: str, max_pages: int = MAX_PDF_PAGES) -> Dict:
     """Parse PDF: text + tables"""
+    start_time = time.time()
     file_size_mb = check_file_limits(filepath)
-    
+
     doc = pymupdf.open(filepath)
     page_count = len(doc)
-    
+
     if page_count > max_pages:
         doc.close()
         raise ValueError(f"PDF quá nhiều trang: {page_count} (giới hạn {max_pages} trang)")
-    
-    print(f"Processing PDF: {page_count} pages, {file_size_mb:.1f}MB")
-    
+
+    log_ingest(f"PDF: {page_count} trang, {file_size_mb:.1f}MB")
+
     all_text = []
     tables_text = []
-    
+
     for page_num, page in enumerate(doc):
         # Extract text
         text = page.get_text("text")
         if text.strip():
             all_text.append(f"[Page {page_num + 1}]\n{text}")
-        
+
         # Extract tables
         try:
             tabs = page.find_tables()
@@ -259,18 +267,23 @@ def parse_pdf(filepath: str, max_pages: int = MAX_PDF_PAGES) -> Dict:
                     tables_text.append(f"[Page {page_num + 1} - Table {i + 1}]\n{table_str}")
         except Exception as e:
             print(f"Warning: Could not extract tables from page {page_num + 1}: {e}")
-    
+
     doc.close()
-    
+
     combined = "\n\n".join(all_text)
     if tables_text:
         combined += "\n\n[TABLES]\n" + "\n\n".join(tables_text)
-    
+
+    elapsed = time.time() - start_time
+    log_ingest(f"PDF parsed: {page_count} trang, {len(tables_text)} bảng - {elapsed:.2f}s")
+
     return {
         "text": combined,
         "page_count": page_count,
+        "table_count": len(tables_text),
         "file_size_mb": file_size_mb,
-        "has_tables": len(tables_text) > 0
+        "has_tables": len(tables_text) > 0,
+        "parse_time_s": elapsed
     }
 
 
@@ -304,8 +317,9 @@ def count_docx_pages(filepath: str) -> int:
 
 def parse_docx(filepath: str, max_pages: int = MAX_PDF_PAGES) -> Dict:
     """Parse DOCX: text + tables + images"""
+    start_time = time.time()
     file_size_mb = check_file_limits(filepath)
-    
+
     # Ước tính số trang và kiểm tra giới hạn
     estimated_pages = count_docx_pages(filepath)
     if estimated_pages > max_pages:
@@ -313,14 +327,14 @@ def parse_docx(filepath: str, max_pages: int = MAX_PDF_PAGES) -> Dict:
             f"DOCX quá dài: ước tính ~{estimated_pages} trang (giới hạn {max_pages} trang). "
             f"Vui lòng chia nhỏ tài liệu."
         )
-    
-    print(f"Processing DOCX: ~{estimated_pages} pages (estimated), {file_size_mb:.1f}MB")
-    
+
+    log_ingest(f"DOCX: ~{estimated_pages} trang (ước tính), {file_size_mb:.1f}MB")
+
     doc = DocxDocument(filepath)
     paragraphs = []
     tables_text = []
     images_text = []
-    
+
     # Extract paragraphs
     for para in doc.paragraphs:
         if para.text.strip():
@@ -329,7 +343,7 @@ def parse_docx(filepath: str, max_pages: int = MAX_PDF_PAGES) -> Dict:
                 paragraphs.append(f"## {para.text}")
             else:
                 paragraphs.append(para.text)
-    
+
     # Extract tables
     for i, table in enumerate(doc.tables):
         table_data = []
@@ -339,24 +353,43 @@ def parse_docx(filepath: str, max_pages: int = MAX_PDF_PAGES) -> Dict:
         if table_data:
             table_str = format_table(table_data)
             tables_text.append(f"[Table {i + 1}]\n{table_str}")
-    
-    # Extract images
-    images_text = extract_images_from_docx(doc, filepath)
-    
+
+    # Count images before extraction
+    image_count = 0
+    for rel in doc.part.rels.values():
+        if "image" in rel.reltype:
+            image_count += 1
+
+    log_ingest(f"Tìm thấy: {len(paragraphs)} đoạn văn, {len(tables_text)} bảng, {image_count} ảnh")
+
+    # Extract images (có thể mất thời gian)
+    if image_count > 0:
+        log_ingest(f"Đang xử lý {image_count} ảnh (OCR + Vision)...")
+        image_start = time.time()
+        images_text = extract_images_from_docx(doc, filepath)
+        image_elapsed = time.time() - image_start
+        log_ingest(f"Xử lý ảnh hoàn tất: {len(images_text)}/{image_count} ảnh - {image_elapsed:.2f}s")
+
     # Combine all content
     combined = "\n\n".join(paragraphs)
     if tables_text:
         combined += "\n\n[TABLES]\n" + "\n\n".join(tables_text)
     if images_text:
         combined += "\n\n[IMAGES]\n" + "\n\n".join(images_text)
-    
+
+    elapsed = time.time() - start_time
+    log_ingest(f"DOCX parsed: ~{estimated_pages} trang, {len(tables_text)} bảng, {len(images_text)} ảnh - {elapsed:.2f}s")
+
     return {
         "text": combined,
+        "page_count": estimated_pages,
         "paragraph_count": len(paragraphs),
+        "table_count": len(tables_text),
+        "image_count": len(images_text),
         "file_size_mb": file_size_mb,
         "has_tables": len(tables_text) > 0,
         "has_images": len(images_text) > 0,
-        "image_count": len(images_text)
+        "parse_time_s": elapsed
     }
 
 
@@ -462,11 +495,14 @@ def ingest_document(filepath: str, use_semantic_chunking: bool = True) -> Dict:
     """
     Ingest một document và trả về chunks + metadata
     """
+    total_start = time.time()
     path = Path(filepath)
     ext = path.suffix.lower()
     filename = path.name
-    
-    print(f"Ingesting: {filename}")
+
+    log_ingest(f"═══════════════════════════════════════")
+    log_ingest(f"BẮT ĐẦU INGEST: {filename}")
+    log_ingest(f"═══════════════════════════════════════")
     
     # Parse theo loại file
     if ext == ".pdf":
@@ -485,11 +521,14 @@ def ingest_document(filepath: str, use_semantic_chunking: bool = True) -> Dict:
         raise ValueError(f"Unsupported file type: {ext}")
     
     # Chunk text
+    log_ingest(f"Đang tạo chunks (semantic={use_semantic_chunking})...")
+    chunk_start = time.time()
     raw_text = parsed.get("text", "")
     chunks = chunk_text(raw_text, use_semantic=use_semantic_chunking)
-    
-    print(f"Created {len(chunks)} chunks (semantic={use_semantic_chunking})")
-    
+    chunk_elapsed = time.time() - chunk_start
+
+    log_ingest(f"Tạo xong {len(chunks)} chunks - {chunk_elapsed:.2f}s")
+
     # Tạo metadata
     file_hash = compute_file_hash(filepath)
     base_metadata = {
@@ -499,19 +538,36 @@ def ingest_document(filepath: str, use_semantic_chunking: bool = True) -> Dict:
         "ingested_at": datetime.now().isoformat(),
         "chunking": "semantic" if use_semantic_chunking else "simple"
     }
-    
+
     # Tạo chunk documents
     chunk_docs = []
     for i, chunk in enumerate(chunks):
         chunk_docs.append({
             "text": chunk,
             "metadata": {
-                **base_metadata, 
-                "chunk_index": i, 
+                **base_metadata,
+                "chunk_index": i,
                 "total_chunks": len(chunks)
             }
         })
-    
+
+    total_elapsed = time.time() - total_start
+
+    # Log tổng kết
+    log_ingest(f"═══════════════════════════════════════")
+    log_ingest(f"HOÀN TẤT INGEST: {filename}")
+    log_ingest(f"  • Loại file: {doc_type.upper()}")
+    log_ingest(f"  • Kích thước: {parsed.get('file_size_mb', 0):.1f}MB")
+    if 'page_count' in parsed:
+        log_ingest(f"  • Số trang: {parsed.get('page_count', 0)}")
+    if 'table_count' in parsed:
+        log_ingest(f"  • Số bảng: {parsed.get('table_count', 0)}")
+    if 'image_count' in parsed:
+        log_ingest(f"  • Số ảnh: {parsed.get('image_count', 0)}")
+    log_ingest(f"  • Số chunks: {len(chunks)}")
+    log_ingest(f"  • Tổng thời gian: {total_elapsed:.2f}s")
+    log_ingest(f"═══════════════════════════════════════")
+
     return {
         "doc_id": file_hash,
         "filename": filename,
@@ -519,5 +575,12 @@ def ingest_document(filepath: str, use_semantic_chunking: bool = True) -> Dict:
         "raw_text": raw_text,
         "chunks": chunk_docs,
         "chunk_count": len(chunks),
-        "metadata": base_metadata
+        "metadata": base_metadata,
+        "stats": {
+            "page_count": parsed.get("page_count", 0),
+            "table_count": parsed.get("table_count", 0),
+            "image_count": parsed.get("image_count", 0),
+            "file_size_mb": parsed.get("file_size_mb", 0),
+            "total_time_s": total_elapsed
+        }
     }
