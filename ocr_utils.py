@@ -97,8 +97,8 @@ class VisionCaptioner:
         if self._disabled:
             return False
 
-        # Kiểm tra VRAM (cần ~18GB cho Qwen2-VL-7B khi generate)
-        if not self._check_vram(18.0):
+        # Kiểm tra VRAM (cần ~16GB cho Qwen2-VL-7B với float16)
+        if not self._check_vram(16.0):
             print("WARNING: Not enough VRAM for Vision model. Skipping image captioning.")
             self._disabled = True
             return False
