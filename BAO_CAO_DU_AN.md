@@ -885,33 +885,35 @@ volumes:
 
 ### 12.1. Tổng kết
 
-Dự án **Embedded RAG Chatbot** là một hệ thống hoàn chỉnh để xây dựng chatbot trả lời câu hỏi dựa trên tài liệu kỹ thuật. Hệ thống kết hợp:
+Hệ thống **Embedded RAG Chatbot** đã được xây dựng thành công với các chức năng chính:
 
-1. **Công nghệ RAG tiên tiến** với hybrid search (dense + sparse)
-2. **Xử lý tài liệu thông minh** với semantic chunking
-3. **Khả năng Vision & OCR** cho hình ảnh kỹ thuật
-4. **Hỗ trợ song ngữ** Tiếng Việt và Tiếng Anh
-5. **Inference nhanh** qua vLLM và các model tối ưu
-6. **Độ tin cậy cao** với retry logic và caching
-7. **REST API chuẩn** dễ tích hợp
-8. **Giao diện web responsive** thân thiện người dùng
+- **Chatbot hỏi đáp thông minh:** Người dùng có thể đặt câu hỏi và nhận câu trả lời dựa trên nội dung tài liệu đã tải lên
+- **Hỗ trợ nhiều loại file:** PDF, Word, văn bản thuần và hình ảnh
+- **Nhận dạng chữ trong ảnh:** Tự động đọc văn bản từ hình ảnh kỹ thuật
+- **Hỗ trợ tiếng Việt:** Cả giao diện và nội dung đều xử lý tốt tiếng Việt
 
-### 12.2. Ưu điểm
+### 12.2. Những gì đã đạt được
 
-- **Chính xác cao:** Hybrid search kết hợp ưu điểm của cả semantic và keyword search
-- **Linh hoạt:** Hỗ trợ nhiều định dạng tài liệu
-- **Hiệu năng tốt:** Caching ở nhiều tầng
-- **Dễ mở rộng:** Kiến trúc module hóa
-- **Hỗ trợ tiếng Việt:** OCR và LLM đều hỗ trợ tiếng Việt
+| Mục tiêu | Kết quả |
+|----------|---------|
+| Tải và xử lý tài liệu | Hoàn thành |
+| Tìm kiếm nội dung liên quan | Hoàn thành |
+| Sinh câu trả lời tự động | Hoàn thành |
+| Giao diện web dễ sử dụng | Hoàn thành |
+| Hỗ trợ tiếng Việt | Hoàn thành |
 
-### 12.3. Hướng phát triển
+### 12.3. Hướng phát triển tiếp theo
 
-- Thêm authentication và authorization
-- Tối ưu hóa caching strategy
-- Hỗ trợ thêm định dạng file
-- Tích hợp streaming đầy đủ
-- Cải thiện UI/UX frontend
-- Thêm analytics và monitoring
+**Ngắn hạn:**
+- Thêm đăng nhập/đăng ký người dùng
+- Cải thiện giao diện đẹp và dễ dùng hơn
+- Hỗ trợ thêm file Excel, PowerPoint
+
+**Dài hạn:**
+- Cho phép nhiều người dùng cùng lúc
+- Thêm tính năng lưu lịch sử hội thoại
+- Triển khai lên cloud để sử dụng từ xa
+- Tích hợp với các ứng dụng khác qua API
 
 ---
 
