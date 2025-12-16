@@ -1,32 +1,54 @@
 <!-- frontend/index.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Embedded RAG Chatbot</title>
+    <title>RAG Chatbot - Lập Trình Nhúng</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            background: #ffffff; 
-            color: #1a1a1a; 
-            min-height: 100vh; 
+        html, body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #ffffff;
+            color: #1a1a1a;
+            height: 100vh;
+            overflow: hidden;
         }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .page-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .university-banner {
+            background: #1e40af;
+            color: #ffffff;
+            text-align: center;
+            padding: 10px;
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 15px 20px; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .footer {
+            background: #f5f5f5;
+            color: #666666;
+            text-align: center;
+            padding: 10px;
+            font-size: 0.9em;
+            border-top: 1px solid #e0e0e0;
+        }
         
         /* Header */
-        .header { 
-            text-align: center; 
-            padding: 20px 0; 
-            border-bottom: 1px solid #e0e0e0; 
-            margin-bottom: 20px; 
+        .header {
+            text-align: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 15px;
         }
-        .header h1 { color: #2563eb; font-size: 1.8em; }
-        .header p { color: #666666; margin-top: 8px; }
+        .header h1 { color: #2563eb; font-size: 1.6em; }
+        .header p { color: #666666; margin-top: 6px; font-size: 0.95em; }
         
         /* Tabs */
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 12px; }
         .tab { 
             padding: 10px 20px; 
             background: #f5f5f5; 
@@ -43,19 +65,19 @@
         }
         .tab:hover { background: #e8e8e8; }
         .tab.active:hover { background: #1d4ed8; }
-        .panel { display: none; }
-        .panel.active { display: block; }
-        
+
         /* Chat Panel */
-        .chat-container { display: flex; flex-direction: column; height: calc(100vh - 200px); }
-        .messages { 
-            flex: 1; 
-            overflow-y: auto; 
-            padding: 20px; 
-            background: #f9f9f9; 
-            border: 1px solid #e0e0e0; 
-            border-radius: 12px; 
-            margin-bottom: 20px; 
+        .chat-container { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+        .panel { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+        .panel.active { display: flex; }
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            margin-bottom: 12px;
         }
         .message { 
             margin-bottom: 16px; 
@@ -119,15 +141,22 @@
         }
         .input-area button:hover { background: #1d4ed8; }
         .input-area button:disabled { background: #cccccc; cursor: not-allowed; }
+        .input-area .btn-clear {
+            padding: 14px 16px;
+            background: #f5f5f5;
+            border: 1px solid #d0d0d0;
+            color: #666666;
+        }
+        .input-area .btn-clear:hover { background: #e8e8e8; }
         
         /* Documents Panel */
-        .upload-area { 
-            background: #f9f9f9; 
-            border: 2px dashed #d0d0d0; 
-            border-radius: 12px; 
-            padding: 40px; 
-            text-align: center; 
-            margin-bottom: 20px; 
+        .upload-area {
+            background: #f9f9f9;
+            border: 2px dashed #d0d0d0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 15px;
         }
         .upload-area.dragover { 
             border-color: #2563eb; 
@@ -147,11 +176,12 @@
         .upload-btn:hover { background: #1d4ed8; }
         
         /* Document List */
-        .doc-list { 
-            background: #ffffff; 
-            border: 1px solid #e0e0e0; 
-            border-radius: 12px; 
-            overflow: hidden; 
+        .doc-list {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            overflow-y: auto;
+            flex: 1;
         }
         .doc-item { 
             display: flex; 
@@ -213,14 +243,70 @@
             font-size: 1em;
             font-weight: 500;
         }
+
+        /* Progress Bar */
+        .progress-container {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+        }
+        .progress-container.active { display: block; }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .progress-title {
+            font-weight: 500;
+            color: #0369a1;
+            font-size: 0.9em;
+        }
+        .progress-percent {
+            font-weight: 600;
+            color: #0369a1;
+            font-size: 0.9em;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0f2fe;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0ea5e9, #2563eb);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .progress-status {
+            margin-top: 8px;
+            font-size: 0.85em;
+            color: #64748b;
+        }
+        .progress-status.error {
+            color: #dc2626;
+        }
+        .progress-status.success {
+            color: #16a34a;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔧 Embedded Programming RAG Chatbot</h1>
-            <p>Ask questions about microcontrollers, protocols, registers & more</p>
+    <div class="page-wrapper">
+        <div class="university-banner">
+            Trường Đại học Công nghệ, Đại học Quốc gia Hà Nội
         </div>
+        <div class="container">
+            <div class="header">
+                <h1>🔧 Trợ Lý RAG - Lập Trình Nhúng</h1>
+                <p>Hỏi đáp về kiến thức lập trình nhúng</p>
+            </div>
         
         <div class="tabs">
             <button class="tab active" onclick="switchTab('chat')">💬 Chat</button>
@@ -232,12 +318,13 @@
             <div class="chat-container">
                 <div class="messages" id="messages">
                     <div class="message assistant">
-                        <strong>Assistant:</strong> Xin chào! Tôi là trợ lý chuyên về lập trình nhúng. Hãy hỏi tôi về vi điều khiển, giao thức I2C/SPI/UART, thanh ghi, hoặc bất kỳ vấn đề embedded nào!
+                        <strong>Assistant:</strong> Xin chào! Tôi là trợ lý chuyên về lập trình nhúng. Hãy hỏi tôi những kiến thức liên quan đến tài liệu mà bạn đã tải lên!
                     </div>
                 </div>
                 <div class="input-area">
                     <input type="text" id="query-input" placeholder="Hỏi về lập trình nhúng... (VD: Giải thích giao thức I2C)" onkeypress="if(event.key==='Enter') sendMessage()">
                     <button onclick="sendMessage()" id="send-btn">Gửi</button>
+                    <button onclick="clearMessages()" class="btn-clear" title="Xóa tin nhắn">🗑️</button>
                 </div>
             </div>
         </div>
@@ -247,21 +334,44 @@
             <div class="upload-area" id="upload-area" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
                 <p style="margin-bottom: 16px;">Kéo thả file hoặc click để upload</p>
                 <p style="margin-bottom: 16px; font-size: 0.9em; color: #888;">Hỗ trợ: PDF, DOCX, TXT, JPG, PNG (tối đa 50MB, 100 trang)</p>
-                <label class="upload-btn">
+                <label class="upload-btn" id="upload-btn-label">
                     Chọn File
                     <input type="file" id="file-input" accept=".pdf,.docx,.txt,.jpg,.jpeg,.png" onchange="uploadFile(this.files[0])">
                 </label>
+                <div class="progress-container" id="progress-container">
+                    <div class="progress-header">
+                        <span class="progress-title" id="progress-title">Đang xử lý...</span>
+                        <span class="progress-percent" id="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="progress-status" id="progress-status">Đang chuẩn bị...</div>
+                </div>
             </div>
             <h3 class="section-title">📚 Tài liệu đã upload</h3>
             <div class="doc-list" id="doc-list">
                 <div class="doc-item" style="color: #888; justify-content: center;">Loading...</div>
             </div>
         </div>
+        </div>
+        <div class="footer">
+            Hoàng Văn Nguyên - Kỹ thuật điều khiển và tự động hóa
+        </div>
     </div>
 
     <script>
         const API_BASE = '';
         let documents = [];
+
+        function clearMessages() {
+            const messages = document.getElementById('messages');
+            messages.innerHTML = `
+                <div class="message assistant">
+                    <strong>Assistant:</strong> Xin chào! Tôi là trợ lý chuyên về lập trình nhúng. Hãy hỏi tôi những kiến thức liên quan đến tài liệu mà bạn đã tải lên!
+                </div>
+            `;
+        }
 
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -356,36 +466,98 @@
             return icons[type] || '📄';
         }
 
+        // Progress bar functions
+        function showProgress() {
+            document.getElementById('progress-container').classList.add('active');
+            document.getElementById('upload-btn-label').style.display = 'none';
+        }
+
+        function hideProgress() {
+            document.getElementById('progress-container').classList.remove('active');
+            document.getElementById('upload-btn-label').style.display = 'inline-block';
+            document.getElementById('file-input').value = '';
+        }
+
+        function updateProgress(percent, title, status, statusClass = '') {
+            document.getElementById('progress-fill').style.width = percent + '%';
+            document.getElementById('progress-percent').textContent = percent + '%';
+            document.getElementById('progress-title').textContent = title;
+            const statusEl = document.getElementById('progress-status');
+            statusEl.textContent = status;
+            statusEl.className = 'progress-status ' + statusClass;
+        }
+
         async function uploadFile(file) {
             if (!file) return;
+
+            showProgress();
+            updateProgress(5, `📄 ${file.name}`, 'Đang tải file lên server...');
+
             const formData = new FormData();
             formData.append('file', file);
 
             try {
+                // Step 1: Upload file (0-30%)
+                updateProgress(10, `📄 ${file.name}`, 'Đang upload file...');
+
                 const uploadRes = await fetch(`${API_BASE}/upload`, { method: 'POST', body: formData });
                 const uploadData = await uploadRes.json();
-                
+
                 if (!uploadRes.ok) {
-                    alert(uploadData.detail);
+                    updateProgress(0, '❌ Lỗi', uploadData.detail || 'Upload thất bại', 'error');
+                    setTimeout(hideProgress, 3000);
                     return;
                 }
-                
+
+                updateProgress(30, `📄 ${file.name}`, '✓ Upload hoàn tất. Đang xử lý tài liệu...');
+
+                // Step 2: Start ingest with progress simulation
+                updateProgress(35, `📄 ${file.name}`, 'Đang phân tích cấu trúc tài liệu...');
+
+                // Simulate progress during ingest
+                let currentProgress = 35;
+                const progressInterval = setInterval(() => {
+                    if (currentProgress < 85) {
+                        currentProgress += Math.random() * 5;
+                        const messages = [
+                            'Đang trích xuất văn bản...',
+                            'Đang phân tích nội dung...',
+                            'Đang tạo chunks...',
+                            'Đang tạo embeddings...',
+                            'Đang lưu vào vector database...'
+                        ];
+                        const msgIndex = Math.min(Math.floor((currentProgress - 35) / 10), messages.length - 1);
+                        updateProgress(Math.floor(currentProgress), `📄 ${file.name}`, messages[msgIndex]);
+                    }
+                }, 500);
+
                 const ingestRes = await fetch(`${API_BASE}/ingest`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ filename: uploadData.filename })
                 });
+
+                clearInterval(progressInterval);
+
                 const ingestData = await ingestRes.json();
-                
+
                 if (!ingestRes.ok) {
-                    alert(ingestData.detail);
+                    updateProgress(0, '❌ Lỗi', ingestData.detail || 'Xử lý thất bại', 'error');
+                    setTimeout(hideProgress, 3000);
                     return;
                 }
-                
-                alert('Upload thành công! ' + ingestData.chunk_count + ' chunks đã được tạo.');
-                loadDocuments();
+
+                // Step 3: Complete (100%)
+                updateProgress(100, '✅ Hoàn tất!', `Đã tạo ${ingestData.chunk_count} chunks thành công!`, 'success');
+
+                setTimeout(() => {
+                    hideProgress();
+                    loadDocuments();
+                }, 2000);
+
             } catch (err) {
-                alert('Lỗi kết nối: ' + err.message);
+                updateProgress(0, '❌ Lỗi kết nối', err.message, 'error');
+                setTimeout(hideProgress, 3000);
             }
         }
 
