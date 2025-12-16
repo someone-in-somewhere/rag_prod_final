@@ -150,6 +150,26 @@ def detect_language(text: str) -> str:
     return "vi" if vn_count > 2 else "en"
 
 
+def contains_chinese(text: str) -> bool:
+    """
+    Kiểm tra xem text có chứa ký tự tiếng Trung không.
+
+    Args:
+        text: Văn bản cần kiểm tra
+
+    Returns:
+        bool: True nếu chứa tiếng Trung (>10 ký tự)
+    """
+    chinese_count = 0
+    for char in text:
+        # Unicode range cho CJK characters
+        if '\u4e00' <= char <= '\u9fff':
+            chinese_count += 1
+            if chinese_count > 10:  # Threshold: >10 ký tự Trung
+                return True
+    return False
+
+
 def _cache_key(query: str, top_k: int, use_hybrid: bool) -> str:
     """
     Tạo cache key cho query.
@@ -447,6 +467,40 @@ def generate_with_retry(
                 DEBUG_GENERATION, "⚡ GENERATE",
                 f"Response received: {len(result)} chars in {elapsed:.2f}s"
             )
+
+            # Kiểm tra nếu response chứa tiếng Trung -> retry với prompt mạnh hơn
+            if contains_chinese(result):
+                log_debug(
+                    DEBUG_GENERATION, "⚡ GENERATE",
+                    "⚠️ Response contains Chinese! Retrying with stronger prompt..."
+                )
+                # Thêm instruction mạnh hơn vào messages
+                retry_messages = messages.copy()
+                retry_messages.append({
+                    "role": "assistant",
+                    "content": result[:100]  # Partial response
+                })
+                retry_messages.append({
+                    "role": "user",
+                    "content": "STOP! You responded in Chinese which is FORBIDDEN. Please respond ONLY in Vietnamese or English. Rewrite your answer:"
+                })
+
+                retry_response = llm_client.chat.completions.create(
+                    model=LLM_MODEL,
+                    messages=retry_messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    top_p=0.9
+                )
+                result = retry_response.choices[0].message.content
+
+                # Nếu vẫn tiếng Trung, trả về message lỗi
+                if contains_chinese(result):
+                    log_debug(
+                        DEBUG_GENERATION, "⚡ GENERATE",
+                        "⚠️ Still Chinese after retry, returning error message"
+                    )
+                    return "Xin lỗi, hệ thống gặp lỗi ngôn ngữ. Vui lòng thử lại câu hỏi."
 
             # Log response preview
             if DEBUG_GENERATION:

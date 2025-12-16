@@ -276,10 +276,11 @@ class VisionCaptioner:
             log_debug(DEBUG_VISION, "🖼️ Vision", f"Processing: {image_path}")
 
             # Prompt được thiết kế cho tài liệu kỹ thuật embedded
+            # QUAN TRỌNG: Yêu cầu rõ ràng KHÔNG dùng tiếng Trung
             if lang == "vi":
-                prompt = "Mô tả chi tiết hình ảnh kỹ thuật này, tập trung vào sơ đồ mạch, code, linh kiện, cấu hình chân, hoặc thông tin hệ thống nhúng."
+                prompt = "Mô tả chi tiết hình ảnh kỹ thuật này bằng TIẾNG VIỆT, tập trung vào sơ đồ mạch, code, linh kiện, cấu hình chân, hoặc thông tin hệ thống nhúng. KHÔNG ĐƯỢC trả lời bằng tiếng Trung."
             else:
-                prompt = "Describe this technical image in detail, focusing on circuit diagrams, code, hardware components, pin configurations, or embedded systems information."
+                prompt = "Describe this technical image in detail IN ENGLISH ONLY, focusing on circuit diagrams, code, hardware components, pin configurations, or embedded systems information. DO NOT respond in Chinese."
 
             # Mở ảnh và convert sang RGB
             image = Image.open(image_path).convert("RGB")
