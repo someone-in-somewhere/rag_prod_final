@@ -16,26 +16,35 @@ from config import UPLOAD_DIR, BASE_DIR, MAX_PDF_PAGES, MAX_FILE_SIZE_MB, SERVER
 # ============================================
 # Cấu hình Logging - Ẩn các log không cần thiết
 # ============================================
+import warnings
+os.environ["TOKENIZERS_PARALLELISM"] = "false"  # Ẩn tokenizer warning
+
+# Ẩn tqdm progress bars
+os.environ["TQDM_DISABLE"] = "1"
+
+# Ẩn transformers warnings
+warnings.filterwarnings("ignore", message=".*XLMRobertaTokenizerFast.*")
+warnings.filterwarnings("ignore", category=UserWarning)
 
 # Tắt các logger gây nhiễu
-logging.getLogger("uvicorn.access").setLevel(logging.WARNING)      # Ẩn GET/POST request logs
-logging.getLogger("uvicorn.error").setLevel(logging.WARNING)       # Chỉ hiện errors
-logging.getLogger("chromadb").setLevel(logging.ERROR)              # Ẩn chromadb info/warning
-logging.getLogger("chromadb.telemetry").setLevel(logging.CRITICAL) # Ẩn telemetry errors
-logging.getLogger("httpx").setLevel(logging.WARNING)               # Ẩn HTTP request logs
-logging.getLogger("httpcore").setLevel(logging.WARNING)            # Ẩn httpcore logs
-logging.getLogger("FlagEmbedding").setLevel(logging.WARNING)       # Ẩn FlagEmbedding info
+logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+logging.getLogger("uvicorn.error").setLevel(logging.WARNING)
+logging.getLogger("chromadb").setLevel(logging.CRITICAL)
+logging.getLogger("chromadb.telemetry").setLevel(logging.CRITICAL)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("FlagEmbedding").setLevel(logging.WARNING)
 logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
-logging.getLogger("transformers").setLevel(logging.WARNING)        # Ẩn transformers warnings
+logging.getLogger("transformers").setLevel(logging.ERROR)
 logging.getLogger("torch").setLevel(logging.WARNING)
 logging.getLogger("PIL").setLevel(logging.WARNING)
-logging.getLogger("rag_pipeline").setLevel(logging.WARNING)        # Ẩn rag_pipeline INFO logs
+logging.getLogger("rag_pipeline").setLevel(logging.WARNING)
+logging.getLogger("tqdm").setLevel(logging.WARNING)
+logging.getLogger("filelock").setLevel(logging.WARNING)
+logging.getLogger("huggingface_hub").setLevel(logging.WARNING)
 
-# Setup logger chính cho server (chỉ hiện log quan trọng)
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(message)s'  # Format đơn giản, không có timestamp/level
-)
+# Setup logger chính cho server
+logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger("rag_server")
 logger.setLevel(logging.INFO)
 

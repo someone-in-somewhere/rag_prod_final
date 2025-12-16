@@ -110,7 +110,7 @@ class VectorStore:
         3. Load embedder (BGE-M3)
         4. Rebuild sparse index từ metadata trong ChromaDB
         """
-        print(f"Initializing ChromaDB at: {CHROMA_DIR}")
+        log_retrieval_debug(f"Initializing ChromaDB at: {CHROMA_DIR}")
 
         self.client = chromadb.PersistentClient(
             path=str(CHROMA_DIR),
@@ -131,9 +131,8 @@ class VectorStore:
         self.doc_sparse: Dict[str, Dict] = {}
 
         self._load_sparse_index()
-        print(f"Collection '{CHROMA_COLLECTION}' ready, docs: {self.collection.count()}")
         log_retrieval_debug(
-            f"Initialized: {self.collection.count()} docs, "
+            f"Collection '{CHROMA_COLLECTION}' ready, docs: {self.collection.count()}, "
             f"{len(self.sparse_index)} unique tokens in sparse index"
         )
 
@@ -168,7 +167,7 @@ class VectorStore:
                 f"{len(self.sparse_index)} unique tokens"
             )
         except Exception as e:
-            print(f"Warning: Could not load sparse index: {e}")
+            log_retrieval_debug(f"Warning: Could not load sparse index: {e}")
 
     def add_documents(self, chunks: List[Dict[str, Any]], use_sparse: bool = True) -> int:
         """
@@ -472,12 +471,12 @@ class VectorStore:
 
                 # Remove từ ChromaDB
                 self.collection.delete(ids=results["ids"])
-                print(f"Deleted {len(results['ids'])} chunks with source={source}")
+                log_retrieval_debug(f"Deleted {len(results['ids'])} chunks with source={source}")
                 return len(results["ids"])
 
             return 0
         except Exception as e:
-            print(f"Delete error: {e}")
+            log_retrieval_debug(f"Delete error: {e}")
             return 0
 
     def get_stats(self) -> Dict:

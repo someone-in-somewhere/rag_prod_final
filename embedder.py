@@ -97,7 +97,7 @@ class Embedder:
 
         VRAM Usage: ~2GB với FP16
         """
-        print(f"Loading BGE-M3 model: {EMBEDDING_MODEL}")
+        log_embedding_debug(f"Loading BGE-M3 model: {EMBEDDING_MODEL}")
         log_embedding_debug(f"Initializing model with FP16 on CUDA...")
 
         self.model = BGEM3FlagModel(
@@ -107,8 +107,7 @@ class Embedder:
         )
         self.dense_dim = 1024  # BGE-M3 dense dimension
 
-        print(f"BGE-M3 ready - Dense dim: {self.dense_dim}")
-        log_embedding_debug(f"Model loaded successfully, dense_dim={self.dense_dim}")
+        log_embedding_debug(f"BGE-M3 ready - Dense dim: {self.dense_dim}")
 
     def embed(self, texts: List[str], return_sparse: bool = False) -> Dict:
         """
