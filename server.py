@@ -19,13 +19,20 @@ from config import UPLOAD_DIR, BASE_DIR, MAX_PDF_PAGES, MAX_FILE_SIZE_MB, SERVER
 # ============================================
 import warnings
 os.environ["TOKENIZERS_PARALLELISM"] = "false"  # Ẩn tokenizer warning
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"  # Chỉ hiện errors từ transformers
 
 # Ẩn tqdm progress bars
 os.environ["TQDM_DISABLE"] = "1"
 
 # Ẩn transformers warnings
 warnings.filterwarnings("ignore", message=".*XLMRobertaTokenizerFast.*")
+warnings.filterwarnings("ignore", message=".*fast tokenizer.*")
 warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+# Import transformers và set verbosity trước khi load models
+import transformers
+transformers.logging.set_verbosity_error()
 
 # Tắt các logger gây nhiễu
 logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
