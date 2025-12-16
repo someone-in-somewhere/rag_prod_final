@@ -66,7 +66,7 @@ from rag_pipeline import chat, chat_stream, clear_cache
 async def lifespan(app: FastAPI):
     """Lifespan handler - log khi server khởi động và shutdown"""
     # Startup
-    print(f"🚀 Server running on http://{SERVER_HOST}:{SERVER_PORT}")
+    print(f"🚀 Server running on http://localhost:{SERVER_PORT}")
     yield
     # Shutdown (nếu cần cleanup)
 
