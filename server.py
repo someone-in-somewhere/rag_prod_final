@@ -12,17 +12,37 @@ import logging
 from pathlib import Path
 
 from config import UPLOAD_DIR, BASE_DIR, MAX_PDF_PAGES, MAX_FILE_SIZE_MB, SERVER_HOST, SERVER_PORT, LOG_LEVEL
+
+# ============================================
+# Cấu hình Logging - Ẩn các log không cần thiết
+# ============================================
+
+# Tắt các logger gây nhiễu
+logging.getLogger("uvicorn.access").setLevel(logging.WARNING)      # Ẩn GET/POST request logs
+logging.getLogger("uvicorn.error").setLevel(logging.WARNING)       # Chỉ hiện errors
+logging.getLogger("chromadb").setLevel(logging.ERROR)              # Ẩn chromadb info/warning
+logging.getLogger("chromadb.telemetry").setLevel(logging.CRITICAL) # Ẩn telemetry errors
+logging.getLogger("httpx").setLevel(logging.WARNING)               # Ẩn HTTP request logs
+logging.getLogger("httpcore").setLevel(logging.WARNING)            # Ẩn httpcore logs
+logging.getLogger("FlagEmbedding").setLevel(logging.WARNING)       # Ẩn FlagEmbedding info
+logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
+logging.getLogger("transformers").setLevel(logging.WARNING)        # Ẩn transformers warnings
+logging.getLogger("torch").setLevel(logging.WARNING)
+logging.getLogger("PIL").setLevel(logging.WARNING)
+logging.getLogger("rag_pipeline").setLevel(logging.WARNING)        # Ẩn rag_pipeline INFO logs
+
+# Setup logger chính cho server (chỉ hiện log quan trọng)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(message)s'  # Format đơn giản, không có timestamp/level
+)
+logger = logging.getLogger("rag_server")
+logger.setLevel(logging.INFO)
+
 from document_ingest import ingest_document
 from vectorstore_chroma import get_vectorstore
 from redis_store import get_redis_store
 from rag_pipeline import chat, chat_stream, clear_cache
-
-# Setup logging
-logging.basicConfig(
-    level=getattr(logging, LOG_LEVEL),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Embedded RAG Chatbot",
@@ -370,4 +390,10 @@ async def serve_frontend():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host=SERVER_HOST, port=SERVER_PORT)
+    uvicorn.run(
+        app,
+        host=SERVER_HOST,
+        port=SERVER_PORT,
+        log_level="warning",  # Ẩn INFO logs của uvicorn
+        access_log=False      # Tắt access log (GET/POST requests)
+    )
