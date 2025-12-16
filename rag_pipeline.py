@@ -100,7 +100,10 @@ IMPORTANT RULES:
 - Provide code examples only if they exist in the context.
 - For technical terms, registers, or configurations, be precise and accurate.
 
-Respond in the same language as the user's question."""
+LANGUAGE REQUIREMENT (CRITICAL):
+- You MUST respond ONLY in English.
+- NEVER respond in Chinese, Japanese, Korean, or any other language.
+- Even if the context contains text in other languages, your response MUST be in English."""
 
 SYSTEM_PROMPT_VI = """Bạn là trợ lý chuyên gia về lập trình nhúng và hệ thống nhúng.
 
@@ -112,7 +115,10 @@ QUY TẮC QUAN TRỌNG:
 - Chỉ cung cấp ví dụ code nếu có trong ngữ cảnh.
 - Với các thuật ngữ kỹ thuật, thanh ghi, cấu hình, hãy chính xác.
 
-Trả lời bằng ngôn ngữ của câu hỏi."""
+YÊU CẦU NGÔN NGỮ (BẮT BUỘC):
+- Bạn PHẢI trả lời HOÀN TOÀN bằng tiếng Việt.
+- TUYỆT ĐỐI KHÔNG được trả lời bằng tiếng Trung, tiếng Nhật, tiếng Hàn hay bất kỳ ngôn ngữ nào khác.
+- Ngay cả khi ngữ cảnh chứa văn bản tiếng nước ngoài, câu trả lời của bạn PHẢI bằng tiếng Việt."""
 
 
 # ============================================
