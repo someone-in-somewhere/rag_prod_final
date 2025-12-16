@@ -289,10 +289,10 @@ def format_context(docs: List[Dict]) -> tuple:
     relevant_docs = [d for d in docs if d.get("score", 0) >= RELEVANCE_THRESHOLD]
 
     if not relevant_docs:
+        scores_str = [f"{d.get('score', 0):.3f}" for d in docs[:5]]
         log_debug(
             DEBUG_CONTEXT, "📋 CONTEXT",
-            f"No docs above threshold {RELEVANCE_THRESHOLD}, all scores: "
-            f"{[d.get('score', 0):.3f for d in docs[:5]]}"
+            f"No docs above threshold {RELEVANCE_THRESHOLD}, all scores: {scores_str}"
         )
         return "No relevant documents found.", False, []
 
