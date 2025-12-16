@@ -321,7 +321,7 @@ class VisionCaptioner:
             del inputs, output_ids
             torch.cuda.empty_cache()
 
-            log_debug(DEBUG_VISION, "🖼️ Vision", f"Caption ({len(caption)} chars): {caption[:100]}...")
+            log_debug(DEBUG_VISION, "🖼️ Vision", f"Caption ({len(caption)} chars):\n{caption}")
 
             return caption
         except Exception as e:
