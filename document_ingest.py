@@ -1,5 +1,27 @@
-"""Document ingestion: Parse PDF, DOCX, TXT, Images với Semantic Chunking"""
-"""document_ingest.py"""
+"""
+Document Ingestion Module
+=========================
+Module xử lý việc đọc, parse và chunking các tài liệu để đưa vào hệ thống RAG.
+
+Các tính năng chính:
+- Parse nhiều định dạng: PDF, DOCX, TXT, Images
+- Trích xuất text, bảng, hình ảnh từ tài liệu
+- Semantic Chunking: chia văn bản theo ngữ nghĩa (giữ nguyên code blocks, bảng)
+- OCR + Vision: trích xuất và mô tả nội dung hình ảnh
+
+Quy trình Ingest:
+1. Kiểm tra giới hạn file (kích thước, số trang)
+2. Parse tài liệu theo định dạng
+3. Trích xuất và xử lý hình ảnh (OCR + Vision)
+4. Chunk văn bản theo semantic boundaries
+5. Tạo metadata và trả về chunks
+
+Sử dụng:
+    from document_ingest import ingest_document
+    result = ingest_document("path/to/document.pdf", use_semantic_chunking=True)
+    # result = {"chunks": [...], "metadata": {...}, ...}
+"""
+
 import pymupdf
 from docx import Document as DocxDocument
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
@@ -12,13 +34,40 @@ import tempfile
 import uuid
 import time
 from datetime import datetime
-from config import CHUNK_SIZE, CHUNK_OVERLAP, UPLOAD_DIR, MAX_FILE_SIZE_MB, MAX_PDF_PAGES, MAX_IMAGE_SIZE_MB
+
+from config import (
+    CHUNK_SIZE, CHUNK_OVERLAP, UPLOAD_DIR,
+    MAX_FILE_SIZE_MB, MAX_PDF_PAGES, MAX_IMAGE_SIZE_MB,
+    DEBUG_CHUNKS, DEBUG_INGEST
+)
 
 
 def log_ingest(message: str):
-    """Log với timestamp cho document ingestion"""
+    """
+    Log với timestamp cho document ingestion.
+
+    Luôn hiển thị (không phụ thuộc DEBUG flag) vì đây là thông tin
+    quan trọng về tiến trình xử lý tài liệu.
+
+    Args:
+        message: Nội dung log
+    """
     timestamp = datetime.now().strftime("%H:%M:%S")
     print(f"[{timestamp}] 📄 {message}")
+
+
+def log_chunk_debug(message: str):
+    """
+    Log debug cho chunking process.
+
+    Chỉ hiển thị khi DEBUG_CHUNKS=True trong config.
+
+    Args:
+        message: Nội dung log debug
+    """
+    if DEBUG_CHUNKS:
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"[{timestamp}] 🔪 CHUNK: {message}")
 
 # Patterns để detect boundaries
 CODE_BLOCK_PATTERN = re.compile(r'```[\s\S]*?```|`[^`]+`')
@@ -28,7 +77,24 @@ REGISTER_PATTERN = re.compile(r'Register\s+Description|Bit\s+Field|Address\s+Off
 
 
 def compute_file_hash(filepath: str) -> str:
-    """Tính MD5 hash của file"""
+    """
+    Tính MD5 hash của file để làm document ID.
+
+    Hash được sử dụng để:
+    - Định danh duy nhất cho mỗi tài liệu
+    - Phát hiện tài liệu trùng lặp
+    - Theo dõi phiên bản tài liệu
+
+    Args:
+        filepath: Đường dẫn đến file
+
+    Returns:
+        str: MD5 hash dạng hex string (32 ký tự)
+
+    Example:
+        hash = compute_file_hash("document.pdf")
+        # "a1b2c3d4e5f6..."
+    """
     hasher = hashlib.md5()
     with open(filepath, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
@@ -36,8 +102,20 @@ def compute_file_hash(filepath: str) -> str:
     return hasher.hexdigest()
 
 
-def check_file_limits(filepath: str, max_size_mb: int = MAX_FILE_SIZE_MB):
-    """Kiểm tra giới hạn file"""
+def check_file_limits(filepath: str, max_size_mb: int = MAX_FILE_SIZE_MB) -> float:
+    """
+    Kiểm tra file có vượt quá giới hạn kích thước không.
+
+    Args:
+        filepath: Đường dẫn đến file
+        max_size_mb: Giới hạn kích thước tối đa (MB)
+
+    Returns:
+        float: Kích thước file tính bằng MB
+
+    Raises:
+        ValueError: Nếu file vượt quá giới hạn
+    """
     file_size_mb = os.path.getsize(filepath) / (1024 * 1024)
     if file_size_mb > max_size_mb:
         raise ValueError(f"File quá lớn: {file_size_mb:.1f}MB (giới hạn {max_size_mb}MB)")
@@ -45,7 +123,22 @@ def check_file_limits(filepath: str, max_size_mb: int = MAX_FILE_SIZE_MB):
 
 
 def detect_segment_type(text: str) -> str:
-    """Detect loại segment: code, table, register, heading, text"""
+    """
+    Phát hiện loại nội dung của một đoạn văn bản.
+
+    Phân loại giúp chunking quyết định cách xử lý:
+    - code: Giữ nguyên, không cắt giữa block
+    - table: Giữ nguyên cấu trúc bảng
+    - register: Mô tả thanh ghi, giữ nguyên
+    - heading: Tiêu đề, dùng làm điểm bắt đầu chunk mới
+    - text: Văn bản thường, có thể cắt
+
+    Args:
+        text: Đoạn văn bản cần phân loại
+
+    Returns:
+        str: Loại segment ("code", "table", "register", "heading", "text")
+    """
     if CODE_BLOCK_PATTERN.search(text):
         return "code"
     if TABLE_MARKER.search(text):
@@ -59,8 +152,25 @@ def detect_segment_type(text: str) -> str:
 
 def find_semantic_boundaries(text: str) -> List[Tuple[int, str]]:
     """
-    Tìm các điểm boundary tự nhiên trong text.
-    Returns: List of (position, boundary_type)
+    Tìm các điểm boundary tự nhiên trong văn bản.
+
+    Semantic boundaries là các vị trí logic để chia văn bản:
+    - Headings: Tiêu đề section/chapter
+    - Code blocks: Bắt đầu và kết thúc code
+    - Tables: Bắt đầu bảng
+    - Register descriptions: Mô tả thanh ghi
+    - Paragraph breaks: Ngắt đoạn (2 newlines)
+
+    Args:
+        text: Văn bản cần phân tích
+
+    Returns:
+        List[Tuple[int, str]]: Danh sách (vị_trí, loại_boundary)
+        được sắp xếp theo vị trí tăng dần
+
+    Example:
+        boundaries = find_semantic_boundaries(text)
+        # [(0, "start"), (150, "heading"), (300, "code_start"), ...]
     """
     boundaries = [(0, "start")]
     
@@ -92,18 +202,46 @@ def find_semantic_boundaries(text: str) -> List[Tuple[int, str]]:
 
 
 def semantic_chunk_text(
-    text: str, 
-    chunk_size: int = CHUNK_SIZE, 
+    text: str,
+    chunk_size: int = CHUNK_SIZE,
     overlap: int = CHUNK_OVERLAP
 ) -> List[Dict]:
     """
-    Chunk text theo semantic boundaries.
-    Giữ nguyên code blocks, tables, register descriptions.
+    Chunk văn bản theo semantic boundaries.
+
+    Khác với simple chunking (cắt theo số từ), semantic chunking
+    tôn trọng cấu trúc ngữ nghĩa của văn bản:
+    - Code blocks được giữ nguyên trong 1 chunk
+    - Bảng không bị cắt giữa chừng
+    - Register descriptions được giữ nguyên
+    - Heading luôn bắt đầu chunk mới
+
+    Quy trình:
+    1. Tìm tất cả semantic boundaries
+    2. Chia text thành segments theo boundaries
+    3. Merge segments thành chunks sao cho:
+       - Không vượt quá chunk_size
+       - Code/table/register đủ lớn thành chunk riêng
+       - Có overlap giữa các chunks
+
+    Args:
+        text: Văn bản cần chunk
+        chunk_size: Số từ tối đa mỗi chunk (mặc định từ config)
+        overlap: Số từ overlap giữa chunks (mặc định từ config)
+
+    Returns:
+        List[Dict]: Danh sách chunks, mỗi chunk có:
+        - text: Nội dung chunk
+        - types: Danh sách loại content trong chunk
     """
     if not text.strip():
         return []
-    
+
+    log_chunk_debug(f"Input: {len(text)} chars, chunk_size={chunk_size}, overlap={overlap}")
+
     boundaries = find_semantic_boundaries(text)
+    log_chunk_debug(f"Found {len(boundaries)} boundaries")
+
     chunks = []
     
     # Tạo segments từ boundaries
