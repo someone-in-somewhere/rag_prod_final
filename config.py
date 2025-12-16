@@ -90,3 +90,24 @@ SERVER_PORT = int(os.getenv("SERVER_PORT", 8081))
 # Logging
 # ============================================
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+# ============================================
+# Debug Flags - Bật/tắt các log chi tiết
+# ============================================
+# Đặt True để hiển thị log chi tiết, False để tắt
+
+# OCR & Vision logging
+DEBUG_OCR = os.getenv("DEBUG_OCR", "false").lower() == "true"           # Log kết quả OCR từng ảnh
+DEBUG_VISION = os.getenv("DEBUG_VISION", "false").lower() == "true"     # Log caption từ Vision model
+
+# Document processing logging
+DEBUG_CHUNKS = os.getenv("DEBUG_CHUNKS", "false").lower() == "true"     # Log nội dung từng chunk
+DEBUG_INGEST = os.getenv("DEBUG_INGEST", "true").lower() == "true"      # Log quá trình ingest (mặc định bật)
+
+# Retrieval & Search logging
+DEBUG_RETRIEVAL = os.getenv("DEBUG_RETRIEVAL", "false").lower() == "true"  # Log top-k kết quả retrieval
+DEBUG_EMBEDDING = os.getenv("DEBUG_EMBEDDING", "false").lower() == "true"  # Log thông tin embedding
+
+# Generation logging
+DEBUG_GENERATION = os.getenv("DEBUG_GENERATION", "false").lower() == "true"  # Log prompt và response chi tiết
+DEBUG_CONTEXT = os.getenv("DEBUG_CONTEXT", "false").lower() == "true"        # Log context được truyền vào LLM
