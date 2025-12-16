@@ -6,6 +6,7 @@ from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional
+from contextlib import asynccontextmanager
 import shutil
 import os
 import logging
@@ -53,18 +54,22 @@ from vectorstore_chroma import get_vectorstore
 from redis_store import get_redis_store
 from rag_pipeline import chat, chat_stream, clear_cache
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan handler - log khi server khởi động và shutdown"""
+    # Startup
+    print(f"🚀 Server running on http://{SERVER_HOST}:{SERVER_PORT}")
+    yield
+    # Shutdown (nếu cần cleanup)
+
+
 app = FastAPI(
     title="Embedded RAG Chatbot",
     version="2.0.0",
-    description="RAG system for embedded programming documentation"
+    description="RAG system for embedded programming documentation",
+    lifespan=lifespan
 )
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Log khi server đã sẵn sàng"""
-    print(f"🚀 Server running on http://{SERVER_HOST}:{SERVER_PORT}")
-    print(f"📚 Ready to accept requests")
 
 # CORS middleware
 app.add_middleware(
