@@ -59,6 +59,13 @@ app = FastAPI(
     description="RAG system for embedded programming documentation"
 )
 
+
+@app.on_event("startup")
+async def startup_event():
+    """Log khi server đã sẵn sàng"""
+    print(f"🚀 Server running on http://{SERVER_HOST}:{SERVER_PORT}")
+    print(f"📚 Ready to accept requests")
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
