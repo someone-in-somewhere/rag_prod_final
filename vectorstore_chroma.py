@@ -325,10 +325,13 @@ class VectorStore:
 
         # Dense search qua ChromaDB
         # Lấy nhiều hơn nếu hybrid để có thể merge với sparse results
-        n_results = min(top_k * 2, self.collection.count()) if use_hybrid else top_k
-        if n_results == 0:
+        # QUAN TRỌNG: n_results phải <= số docs trong collection, nếu không HNSW sẽ lỗi
+        collection_count = self.collection.count()
+        if collection_count == 0:
             log_retrieval_debug("Collection empty, returning empty results")
             return []
+
+        n_results = min(top_k * 2 if use_hybrid else top_k, collection_count)
 
         dense_results = self.collection.query(
             query_embeddings=[query_dense],
