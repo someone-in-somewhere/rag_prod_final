@@ -130,7 +130,7 @@
         }
         
         /* Input Area */
-        .input-area { display: flex; gap: 10px; }
+        .input-area { display: flex; gap: 10px; width: 100%; box-sizing: border-box; }
         .input-area input { 
             flex: 1; 
             padding: 14px 18px; 
@@ -165,13 +165,14 @@
         }
         .input-area .btn-clear:hover { background: #e8e8e8; }
         
-        /* Documents Panel */
-        #docs-panel {
+        /* Panels - đảm bảo cùng chiều rộng */
+        #chat-panel, #docs-panel {
             width: 100%;
+            box-sizing: border-box;
         }
         .upload-area {
             background: #f9f9f9;
-            border: 2px dashed #d0d0d0;
+            border: 1px dashed #d0d0d0;
             border-radius: 12px;
             padding: 15px;
             text-align: center;
