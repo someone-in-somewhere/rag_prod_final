@@ -67,8 +67,9 @@
         .tab.active:hover { background: #1d4ed8; }
 
         /* Chat Panel */
-        .chat-container { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-        .panel { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+        .chat-container { display: flex; flex-direction: column; flex: 1; overflow: hidden; width: 100%; }
+        .docs-container { display: flex; flex-direction: column; flex: 1; overflow: hidden; width: 100%; }
+        .panel { flex: 1; display: none; flex-direction: column; overflow: hidden; width: 100%; }
         .panel.active { display: flex; }
         .messages {
             flex: 1;
@@ -335,27 +336,29 @@
         
         <!-- Documents Panel -->
         <div id="docs-panel" class="panel">
-            <div class="upload-area" id="upload-area" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
-                <p style="margin-bottom: 16px;">Kéo thả file hoặc click để upload</p>
-                <p style="margin-bottom: 16px; font-size: 0.9em; color: #888;">Hỗ trợ: PDF, DOCX, TXT, JPG, PNG (tối đa 50MB, 100 trang)</p>
-                <label class="upload-btn" id="upload-btn-label">
-                    Chọn File
-                    <input type="file" id="file-input" accept=".pdf,.docx,.txt,.jpg,.jpeg,.png" onchange="uploadFile(this.files[0])">
-                </label>
-                <div class="progress-container" id="progress-container">
-                    <div class="progress-header">
-                        <span class="progress-title" id="progress-title">Đang xử lý...</span>
-                        <span class="progress-percent" id="progress-percent">0%</span>
+            <div class="docs-container">
+                <div class="upload-area" id="upload-area" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                    <p style="margin-bottom: 16px;">Kéo thả file hoặc click để upload</p>
+                    <p style="margin-bottom: 16px; font-size: 0.9em; color: #888;">Hỗ trợ: PDF, DOCX, TXT, JPG, PNG (tối đa 50MB, 100 trang)</p>
+                    <label class="upload-btn" id="upload-btn-label">
+                        Chọn File
+                        <input type="file" id="file-input" accept=".pdf,.docx,.txt,.jpg,.jpeg,.png" onchange="uploadFile(this.files[0])">
+                    </label>
+                    <div class="progress-container" id="progress-container">
+                        <div class="progress-header">
+                            <span class="progress-title" id="progress-title">Đang xử lý...</span>
+                            <span class="progress-percent" id="progress-percent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-status" id="progress-status">Đang chuẩn bị...</div>
                     </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill"></div>
-                    </div>
-                    <div class="progress-status" id="progress-status">Đang chuẩn bị...</div>
                 </div>
-            </div>
-            <h3 class="section-title">📚 Tài liệu đã upload</h3>
-            <div class="doc-list" id="doc-list">
-                <div class="doc-item" style="color: #888; justify-content: center;">Loading...</div>
+                <h3 class="section-title">📚 Tài liệu đã upload</h3>
+                <div class="doc-list" id="doc-list">
+                    <div class="doc-item" style="color: #888; justify-content: center;">Loading...</div>
+                </div>
             </div>
         </div>
         </div>
